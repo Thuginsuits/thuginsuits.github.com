@@ -1,0 +1,530 @@
+import xlsxwriter
+import pandas as pd
+import numpy as np
+import datetime
+import colorsys
+PN_id = input("请输入ID：")
+inp = []
+while PN_id != '':
+    inp.append(PN_id)
+    PN_id = input()
+# print(inp)
+# print(type(inp))
+# 输出结果：[1, 2, 3, 4, 5, 6]
+PSS_Worksheet_path = r"\\bbac-fs-01\PurchaseSupply\AftersalesSparePart\500_AS PROC 备件采购\BuyerAndSales 打开这个\采销结工作表-备用.xlsx"
+PSS_Worksheet = pd.read_excel(PSS_Worksheet_path, index_col=0)
+supplier_sheet = pd.read_excel(PSS_Worksheet_path, sheet_name='供应商分配表', index_col=0,header=0)
+# print(supplier_sheet)
+# print(PSS_Worksheet)
+dict = {}
+dict_tans = {}
+for i_str in inp:
+    # print(i_str)
+    # print(type(i_str))
+    i = int(i_str)
+    pn_name = PSS_Worksheet.loc[i, '零件名称(input)']
+    pn = PSS_Worksheet.loc[i, '零件号']
+    pn_type = PSS_Worksheet.loc[i, '项目类型']
+    supplier_code = PSS_Worksheet.loc[i, '供应商代码']
+    supplier_name = PSS_Worksheet.loc[i, '供应商名称']
+    warehouse = PSS_Worksheet.loc[i, '仓库']
+    MOQ = PSS_Worksheet.loc[i, 'MOQ']
+    LT = PSS_Worksheet.loc[i, 'LT']
+    dict[i] = [pn]
+    dict_tans.update(dict)
+    dict_tans[i].append(pn_name)
+    dict_tans[i].append(pn_type)
+    dict_tans[i].append(supplier_name)
+    dict_tans[i].append(supplier_code)
+    dict_tans[i].append(warehouse)
+    dict_tans[i].append(MOQ)
+    dict_tans[i].append(LT)
+supplier_code_ONE = dict_tans.get(i)[4]
+supplier_name_ONE = dict_tans.get(i)[3]
+pn_type_ONE = dict_tans.get(i)[2]
+print(supplier_code_ONE)
+# print(type(supplier_name_ONE))
+supplier_code_only=int(supplier_code_ONE)
+# print(supplier_code_only)
+# print(type(supplier_code_only))
+supplier_email = supplier_sheet.loc[supplier_code_only, 'Email']
+print("请确认供应商邮箱：{}".format(supplier_email))
+save_file = input("请输入要保存到地址：")
+url = save_file + '1.北京奔驰报价表-' + str(supplier_code_ONE) + '-' + str(supplier_name_ONE) + '-' + str(pn_type_ONE) + "-RFQ" + '-' + str(datetime.date.today()) + '-.XLSX'  # 保存路径与文件名相加
+workbook = xlsxwriter.Workbook(url, {'nan_inf_to_errors': True})  # 新建excel表,可写不使用以上函数自己写入要保存的路径
+sht1 = workbook.add_worksheet(name='报价表')
+style1 = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中        #汉仪中宋简 全边框，窄边框  字号：11  水平靠左
+    'font_name': '汉仪中宋简',
+    'font_size': 11,
+    'border': 1
+})
+style2 = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中
+    'font_name': '汉仪中宋简',            # 汉仪中宋简 绿色底纹，上框线,左框线,右框线  窄边框 字号：11
+    'font_size': 11,
+    'fg_color': '#C4D79B',
+    'top': 1,
+    'left': 1,
+    'right': 1
+})
+style3 = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中       # 汉仪中宋简  绿色底纹,左框线，右框线   窄边框  字号：11
+    'font_name': '汉仪中宋简',
+    'font_size': 11,
+    'fg_color': '#C4D79B',
+    'left': 1,
+    'right': 1
+})
+style4 = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中       # 汉仪中宋简 加粗，上框线，左框线，右框线   粗边框  字号：18
+    'font_name': '汉仪中宋简',
+    'font_size': 18,
+    'bold': True,
+    'border': 2,
+})
+style5 = workbook.add_format({
+    'align': 'right',  # 水平靠右
+    'valign': 'vcentre',  # 垂直居中        #汉仪中宋简  右框线-粗边框  字号：11
+    'font_name': '汉仪中宋简',
+    'font_size': 11,
+    'right': 2
+})
+style6 = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中            # 汉仪中宋简  左框线-粗边框  字号:11
+    'font_name': '汉仪中宋简',
+    'font_size': 11,
+    'left': 2
+})
+style7 = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中       # 汉仪中宋简 无框线  字号：11
+    'font_name': '汉仪中宋简',
+    'font_size': 11,
+    'bold': False,
+    'border': 0,
+})
+
+style8 = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中        # 汉仪中宋简  绿色底纹  上框线、左框线、右框线-粗边框  字号：11
+    'font_name': '汉仪中宋简',
+    'font_size': 11,
+    'fg_color': '#C4D79B',
+    'top': 1,
+    'left': 1,
+    'right': 2
+})
+style9 = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中      # 汉仪中宋简  绿色底纹  上框线、右框线、左框线-粗边框  字号：11
+    'font_name': '汉仪中宋简',
+    'font_size': 11,
+    'fg_color': '#C4D79B',
+    'top': 1,
+    'left': 2,
+    'right': 1
+})
+style10 = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中       # 汉仪中宋简 全框线-窄边框  字号：11
+    'font_name': '汉仪中宋简',
+    'font_size': 11,
+    'border': 1
+})
+# 左粗
+style11 = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中         # 汉仪中宋简 全框线   左框线-粗边框  字号：11
+    'font_name': '汉仪中宋简',
+    'font_size': 11,
+    'top': 1,
+    'left': 2,
+    'right': 1,
+    'bottom': 1
+})
+style12 = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中         # 汉仪中宋简 上、下、右框线-粗边框  字号：11
+    'font_name': '汉仪中宋简',
+    'font_size': 11,
+    'top': 1,
+    'right': 2,
+    'bottom': 1
+})
+style16 = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中        # 汉仪中宋简   绿色底纹 上、左、右框线-窄边框  字号：8
+    'font_name': '汉仪中宋简',
+    'font_size': 8,
+    'fg_color': '#C4D79B',
+    'italic': True,
+    'top': 1,
+    'left': 1,
+    'right': 1
+})
+style22 = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中
+    'font_name': '汉仪中宋简',            # 汉仪中宋简 绿色底纹  左、右框线 窄边框  字号：11
+    'font_size': 11,
+    'fg_color': '#C4D79B',
+    'left': 1,
+    'right': 1
+})
+style29 = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中     # 汉仪中宋简 绿色底纹  左框线-粗边框  右框线 字号：11
+    'font_name': '汉仪中宋简',
+    'font_size': 11,
+    'fg_color': '#C4D79B',
+    'left': 2,
+    'right': 1
+})
+style1_en = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中       # 'Corpos' 全边框，窄边框  字号：11  水平靠左
+    'font_name': 'Corpos',
+    'font_size': 11,
+    'border': 1
+})
+style2_en = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中
+    'font_name': 'Corpos',            # 'Corpos' 绿色底纹，上框线,左框线,右框线  窄边框 字号：11
+    'font_size': 11,
+    'fg_color': '#C4D79B',
+    'top': 1,
+    'left': 1,
+    'right': 1,
+    'text_wrap': True
+})
+style3_en = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中       # 'Corpos'  绿色底纹,左框线，右框线 上框线   窄边框  字号：11
+    'font_name': 'Corpos',
+    'font_size': 11,
+    'fg_color': '#C4D79B',
+    'top': 1,
+    'left': 1,
+    'right': 1
+})
+style4_en = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中       # 'Corpos' 加粗，上框线，左框线，右框线   粗边框  字号：18
+    'font_name': 'Corpos',
+    'font_size': 18,
+    'bold': True,
+    'border': 2,
+})
+style5_en = workbook.add_format({
+    'align': 'right',  # 水平靠右
+    'valign': 'vcentre',  # 垂直居中        # 'Corpos'  右框线-粗边框  字号：11
+    'font_name': 'Corpos',
+    'font_size': 11,
+    'right': 2
+})
+style6_en = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中            # 'Corpos'  左框线-粗边框  字号:11
+    'font_name': 'Corpos',
+    'font_size': 11,
+    'left': 2
+})
+style7_en = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中       # 'Corpos' 无框线  字号：11
+    'font_name': 'Corpos',
+    'font_size': 11,
+    'bold': False,
+    'border': 0,
+})
+
+style8_en = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中        # 'Corpos'  绿色底纹 左框线、右框线-粗边框  字号：11
+    'font_name': 'Corpos',
+    'font_size': 11,
+    'fg_color': '#C4D79B',
+    'left': 1,
+    'right': 2
+})
+style9_en = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中      # 'Corpos'  绿色底纹  上框线、右框线、左框线-粗边框  字号：11
+    'font_name': 'Corpos',
+    'font_size': 11,
+    'fg_color': '#C4D79B',
+    'top': 1,
+    'left': 2,
+    'right': 1
+})
+style10_en = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中       # 'Corpos' 全框线-窄边框  字号：11
+    'font_name': 'Corpos',
+    'font_size': 11,
+    'border': 1
+})
+# 左粗
+style11_en = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中         # 'Corpos' 全框线   左框线-粗边框  字号：11
+    'font_name': 'Corpos',
+    'font_size': 11,
+    'top': 1,
+    'left': 2,
+    'right': 1,
+    'bottom': 1
+})
+style12_en = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中         # 'Corpos' 上、下、右框线-粗边框  字号：11
+    'font_name': 'Corpos',
+    'font_size': 11,
+    'top': 1,
+    'right': 2,
+    'bottom': 1
+})
+sht1.write(6, 1, '', style29)
+for t in range(1,10):
+    sht1.write(6,t, '', style22)
+    # sht1.write(6, 3, '', style22)
+    # sht1.write(6, 4, '', style22)
+    # sht1.write(6, 5, '', style22)
+    # sht1.write(6, 6, '', style22)
+    # sht1.write(6, 7, '', style22)
+    # sht1.write(6, 8, '', style22)
+    # sht1.write(6, 9, '', style22)
+    # sht1.write(6, 8, '', style22)
+    # sht1.write(6, 9, '', style22)
+for q in range(6, 34):
+    for w in range(1, 17):
+        sht1.write(q, w, '', style1)
+sht1.merge_range('B2:Q2', '备件报价表Spare parts RFQ', style4)
+# sht1.merge_range('K4:Q4', '备件报价Spare parts price', style8)
+sht1.merge_range('B4:B5','ID',style9_en)
+sht1.merge_range('C4:C5','类型',style2)
+sht1.merge_range('D4:D5','零件号',style2)
+sht1.merge_range('E4:E5','L7件号',style2)
+sht1.merge_range('F4:F5','零件名称',style2)
+sht1.merge_range('G4:G5','供应商代码',style2)
+sht1.merge_range('H4:H5','供应商名称',style2)
+sht1.merge_range('I4:I5','仓库',style2)
+sht1.merge_range('J4:J5','量产基础价格',style2)
+sht1.merge_range('K4:Q5','备件报价Spare parts price',style8)
+sht1.set_column('A:A', 1)
+sht1.set_column('B:G', 14)
+sht1.set_column('H:H', 25)
+sht1.set_column('I:Q', 14)
+sht1.set_row(0, 5)
+sht1.set_row(1, 40)
+sht1.set_row(2, 30)
+sht1.write(2, 1, '供应商代码：', style6)
+sht1.write(2, 2, 'Supplier code', style6_en)
+sht1.write(2, 3, supplier_code_ONE, style7_en)
+sht1.write(2, 5, '供应商名称：', style7)
+sht1.write(2, 6, 'Supplier name', style7_en)
+sht1.write(2, 8, supplier_name_ONE, style7_en)
+sht1.write(2, 12, '货币：人民币', style7)
+sht1.write(2, 13, 'Currency:RMB', style7_en)
+sht1.write(2, 15, '价格不含增值税', style7)
+sht1.write(2, 16, 'Price withoutVAT', style5_en)
+# sht1.write(2, 16, ' ', style12)
+# sht1.write(3, 1, 'ID', style9)
+# sht1.write(3, 2, '类型', style2)
+# sht1.write(3, 3, '零件号', style2)
+# sht1.write(3, 4, 'L7件号', style2)
+# sht1.write(3, 5, '零件名称', style2)
+# sht1.write(3, 6, '供应商代码', style2)
+# sht1.write(3, 7, '供应商名称', style2)
+# sht1.write(3, 8, '仓库', style2)
+# sht1.write(3, 9, '量产基础价格', style2)
+# sht1.write(4, 1, 'No', style9_en)
+# sht1.write(4, 2, 'Type', style2)
+# sht1.write(4, 3, 'Part Number', style2)
+# sht1.write(4, 4, 'L7 PN', style2)
+# sht1.write(4, 5, 'Part Description', style2)
+# sht1.write(4, 6, 'Supplier No.', style2)
+# sht1.write(4, 7, 'Supplier Name', style2)
+# sht1.write(4, 8, 'Warehouse', style2)
+# sht1.write(4, 9, 'Series Part Basic Price', style2)
+# sht1.write(4, 10, '基础价格', style2)
+# sht1.write(4, 11, '包装费', style2)
+# sht1.write(4, 12, '运输费', style2)
+# sht1.write(4, 13, '总价', style2)
+# sht1.write(4, 14, '最小起订量', style2)
+# sht1.write(4, 15, '交期时间', style2)
+# sht1.write(4, 16, '备注', style8)
+# sht1.merge_range('G6:H6', '如有多个工厂供应，请填写正确的供货工厂信息', style16)
+# sht1.write(5, 10, 'Basic Price', style3)
+# sht1.write(5, 11, 'Package Price', style3)
+# sht1.write(5, 12, 'Freight Price', style3)
+# sht1.write(5, 13, 'Total Price', style3)
+# sht1.write(5, 14, 'MOQ', style3)
+# sht1.write(5, 15, 'LT(days）', style3)
+# sht1.write(5, 16, 'Remark', style8)
+sht1.merge_range('B6:B7', 'No', style9_en)
+sht1.merge_range('C6:C7', 'Type', style2_en)
+sht1.merge_range('D6:D7', 'Part Number', style2_en)
+sht1.merge_range('E6:E7', 'L7 PN', style2_en)
+sht1.merge_range('F6:F7', 'Part Description', style2_en)
+sht1.write(5, 6, 'Supplier No.', style2_en)
+sht1.write(5,7, 'Supplier Name', style2_en)
+sht1.merge_range('I6:I7', 'Warehouse', style2_en)
+sht1.merge_range('J6:J7', 'Series Part Basic Price', style2_en)
+sht1.write(5, 10, '基础价格', style2)
+sht1.write(5, 11, '包装费', style2)
+sht1.write(5, 12, '运输费', style2)
+sht1.write(5, 13, '总价', style2)
+sht1.write(5, 14, '最小起订量', style2)
+sht1.write(5, 15, '交期时间', style2)
+sht1.write(5, 16, '备注', style8)
+sht1.merge_range('G7:H7', '如有多个工厂供应，请填写正确的供货工厂信息', style16)
+sht1.write(6, 10, 'Basic Price', style3_en)
+sht1.write(6, 11, 'Package Price', style3_en)
+sht1.write(6, 12, 'Freight Price', style3_en)
+sht1.write(6, 13, 'Total Price', style3_en)
+sht1.write(6, 14, 'MOQ', style3_en)
+sht1.write(6, 15, 'LT(days）', style3_en)
+sht1.write(6, 16, 'Remark', style8_en)
+J = 1
+s = 7
+while J <= len(dict_tans):
+    for id in dict_tans.keys():
+        AAA = dict_tans.get(id)
+        # print(AAA)
+        pn_type = AAA[2]
+        pn = AAA[0]
+        pn_name = AAA[1]
+        supplier_code = AAA[4]
+        supplier_name = AAA[3]
+        warehouse = AAA[5]
+        MOQ = AAA[6]
+        LT = AAA[7]
+        # print(pn_type)
+        # print(pn)
+        # print(id)
+        # while J <= len(dict_tans):
+        sht1.write(s, 1, id, style1_en)
+        # print(id)
+        sht1.write(s, 2, pn_type, style1)
+        sht1.write(s, 3, pn, style1_en)
+        sht1.write(s, 5, pn_name, style1_en)
+        sht1.write(s, 6, supplier_code, style1_en)
+        sht1.write(s, 7, supplier_name, style1)
+        sht1.write(s, 8, warehouse, style1_en)
+        sht1.write(s, 14, MOQ, style1_en)
+        sht1.write(s, 15, LT, style1_en)
+        J = J + 1
+        s = s + 1
+style13 = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中
+    'font_name': '汉仪中宋简',            # 汉仪中宋简  绿色底纹 全框线 窄边框 字号：11  水平靠左
+    'font_size': 11,
+    'border': 1,
+    'fg_color': '#C4D79B'
+})
+style14 = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中     # 汉仪中宋简  全边框 窄边框 字号：11
+    'font_name': '汉仪中宋简',
+    'font_size': 11,
+    'border': 1,
+})
+style15 = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中   # 汉仪中宋简  绿色底纹 全框线 窄边框 字号：11  水平居中
+    'font_name': '汉仪中宋简',
+    'font_size': 11,
+    'border': 1,
+    'fg_color': '#C4D79B'
+})
+sht2 = workbook.add_worksheet(name='填写说明')
+sht2.set_row(0, 30)
+sht2.set_column('A:A', 30)
+sht2.set_column('B:B', 80)
+sht2.merge_range('A1:B1', '填写说明', style14)
+sht2.merge_range('A2:B2', '类型', style15)
+# sht2.write(1,0,'类型',style13)
+sht2.write(2, 0, '普通需求', style1)
+sht2.write(3, 0, '紧急需求', style1)
+sht2.merge_range('A5:B5', '普通货物仓库', style13)
+# sht2.write(5,0,'普通货物仓库',style13)
+sht2.write(5, 0, 'RPL North(Tang Shan)', style1_en)
+sht2.write(6, 0, 'RPL East(Shao Xing)', style1_en)
+sht2.merge_range('A8:B8', '危险品货物仓库', style13)
+# sht2.write(8,0,'危险品货物仓库',style13)
+sht2.write(8, 0, 'EFS North (Cangzhou)', style1_en)
+sht2.write(9, 0, 'EFS East (Maanshan)', style1_en)
+sht2.write(10, 0, 'L7件号', style1_en)
+sht2.write(11, 0, 'MOQ', style1_en)
+sht2.write(12, 0, 'LT', style1_en)
+sht2.write(2, 1, '2周内完成零件报价', style1)
+sht2.write(3, 1,
+           '1周内完成零件报价。如已签署量产协议，按基础价等于正式量产基础价格报价。如未签署，报临时价格，临时价按大于预估正式价格',
+           style1)
+sht2.write(10, 1, '零件如是下级零件，未签署量产协议，在该列填写对应的已签署量产协议的最小上级件号。', style1)
+sht2.write(5, 1, '河北唐山市路北区朝阳西道普洛斯物流园，邮编063000', style1)
+sht2.write(6, 1, '杭州湾上虞经济技术开发区新兴一路30号普洛斯物流园，邮编：312369', style1)
+sht2.write(8, 1, '河北沧州市临港经济技术开发区东区化工一路南,邮编061108', style1)
+sht2.write(9, 1, '安徽省马鞍山市当涂经济开发区大城坊西路,邮编243199', style1)
+sht2.write(11, 1, '最小起订量，订单数量将是MOQ的倍数', style1)
+sht2.write(12, 1, '交货周期，对于量产默认要求14天内交货。如不能满足，填写贵司可达成的时间', style1)
+workbook.close()
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>发邮件
+import win32com.client as win32
+instruct = input("是否直接发送询价邮件(Y/N)：")
+if instruct == 'Y':
+    def send_mail():
+        outlook = win32.Dispatch('Outlook.Application')
+        mail_item = outlook.CreateItem(0)  # 0: olMailItem
+        mail_item.Recipients.Add(supplier_email)
+        mail_item.Subject ="BBAC-备件询价"+'-'+str(supplier_name)+'-'+str(datetime.date.today())
+        mail_item.BodyFormat = 2  # 2: Html format
+        mail_item.HTMLBody = "<p>尊敬的供应商，您好</p>" \
+                             "<br/>" \
+                             "<p>现请贵司就北京奔驰售后备件采购需求进行报价，请仔细阅读附件表中说明，并按附件1报价表（中MOQ、仓库等信息）进行报价，按附件2填写包装说明书。</p>" \
+                             "<hr/>" \
+                             "<p>反馈时间要求：</p></p>" \
+                             "<p>1. 类型为普通需求/国产化：2周内反馈价格和包装说明书。</p></p>" \
+                             "<p>2. 类型为紧急需求/项目：1周内反馈临时价，2周内反馈正式价和包装说明书。</p></p></p></p>" \
+                             "<b>基础价格说明：</b></p>" \
+                             "<p>a)  量产价格已确定的零件，备件基础价格与量产基础价格（不含摊销、量产包装、运输等费用）相同。</p></p>" \
+                             "<p>b) 量产价格未确定的零件，按临时价进行报价，临时价应大于且接近量产价，并于报价表S列注明。临时价非协议价格，请在确定量产价格后及时告知，否则将影响签署正式协议。双方按照正式价格签署协议、进行结算。</p></p>" \
+                             "<p>c) 零件若由BBAC指定下级供应商生产，或零件无任何信息，请告知。</p></p>" \
+                             "<p>d) 零件若属于下级零件，且未与BBAC签署量产价格协议，需填写签署协议的L7件号，并提供PBD作为零件基础价格说明。</p></p>" \
+                             "<b>运输费用说明：</b></p>" \
+                             "<p>a) 运输方式有：快递、零担和专车（仅在必要情况下选择专车），请根据货物属性和MOQ安排最优运输方式。</p></p>" \
+                             "<p>b) 请仔细阅读并遵守包装说明书的托盘使用规范，如不需要托盘，“托盘”相关内容可不填。</p></p>" \
+                             "<b>包装说明书填写说明：</b></p>" \
+                             "<p>a) 请认真查看售后备件包装说明书模板，有下拉菜单的单元格请以下拉菜单内容为首选项。如零件属于危\化品零件，请特别告知。</p>" \
+                             "<p>b) MOQ 为最小订单量，MPQ为最小包装量。请按表内MOQ要求设计包装。</p>" \
+                             "<p>c)  附件3是BBAC售后件包装规范，特别是关于托盘的使用可参考。</p></p>" \
+                             "<hr/>" \
+                             "<p style=color:blue;>交付要求：包装运输方案需满足《北京奔驰售后备件_包装和物流规范》</p>" \
+                             "<p>仓库地址，请参考报价表内分配的仓库，具体地址如下：</p>" \
+                             "<P>RPL North(Tang Shan)            河北唐山市路北区朝阳西道普洛斯物流园，邮编063000</P>" \
+                             "<td>RPL East(Shao Xing)            杭州湾上虞经济技术开发区新兴一路30号普洛斯物流园，邮编：312369" \
+                             "<hr/>" \
+                             "<p style=color:blue;>报价材料的反馈，视为贵司已知悉并接受以上相关要求。</p>" \
+                             "<p>如有任何问题，请反馈本邮箱，谢谢！</p>" \
+                             "<br/>" \
+                             "<p>致  敬</p>" \
+                             "<p>Best Regards / Mit freundlichen Gruessen</p>" \
+                             "<p>采购与供应商管理 商务中心</p>" \
+                             "<p>北京奔驰汽车有限公司</p>"
+        mail_item.Attachments.Add(url)
+        mail_item.Attachments.Add("C:\\Users\\zhaowy03\\Desktop\\工作文件\\流程文档\\采购相关\\2.售后备件包装说明书-V2023.xlsx")
+        mail_item.Attachments.Add("C:\\Users\\zhaowy03\\Desktop\\工作文件\\流程文档\\采购相关\\北京奔驰售后备件_包装和物流规范.docx")
+        mail_item.Send()
+    if __name__ == '__main__':
+        send_mail()
+        print("发送成功")
+input("please input any key to exit!")
