@@ -1,0 +1,1626 @@
+    #导库
+import os
+from tkinter import messagebox
+import numpy as np
+import pandas as pd
+import math
+import xlsxwriter
+import datetime
+import tkinter as tk
+from tkinter import filedialog
+# 写运输费用数据库
+# 顺丰卡航-唐山>=60
+dict_KH_TS_up60 = {
+    '广东': [281, 3.2], '广西': [265, 3.1], '江苏': [225, 2.6], '浙江': [237, 2.5], '上海': [237, 2.7],
+    '天津': [120, 1.4], '河北': [120, 1.4],'黑龙江': [184, 2.2], '吉林': [217, 2.4], '辽宁': [180, 2.1],
+    '四川': [268, 2.4], '重庆': [268, 2.5], '湖南': [220, 2.4],'山西': [170, 1.6], '湖北': [233, 2.5],
+    '江西': [226, 2.5], '河南': [186, 1.6], '安徽': [226, 2.8],
+    '山东': [174, 1.5], '福建': [246, 2.7], '北京': [120, 1.4]
+}
+# 顺丰卡航-绍兴>=60
+dict_KH_SX_up60 = {
+    '广东': [259, 2.7], '广西': [254, 2.9], '江苏': [115, 1.5], '浙江': [115, 1.3], '上海': [120, 1.5],
+    '天津': [242, 2.4], '河北': [243, 2.3], '黑龙江': [271, 3], '吉林': [234, 2.9], '辽宁': [273, 2.6],
+    '四川': [262, 2.5], '重庆': [234, 2.6], '湖南': [215, 2.3], '山西': [238, 2.6], '湖北': [221, 2.5],
+    '江西': [209, 1.9], '河南': [218, 2.1], '安徽': [115, 1.5],
+    '山东': [196, 2.2], '福建': [206, 1.5], '北京': [253, 2.6]
+}
+# 顺丰卡航-唐山<60
+dict_KH_TS_under60 = {
+    '广东': [105, 4.4], '广西': [109, 3.9], '江苏': [89, 3.5], '浙江': [89, 3.7], '上海': [88, 3.7],
+    '天津': [40, 2], '河北': [40, 2], '黑龙江': [68, 2.9], '吉林': [85, 3.3], '辽宁': [68, 2.8],
+    '四川': [104, 4.1], '重庆': [90, 3.7], '贵州': [103, 4.4], '湖南': [88, 3.3],
+    '陕西': [86, 3.8], '山西': [66, 2.6], '湖北': [85, 3.7], '江西': [86, 3.5], '河南': [86, 2.5],
+    '安徽': [86, 3.5], '山东': [70, 2.6], '福建': [86, 4], '北京': [40, 2], '云南': [105, 5]
+}
+# 顺丰卡航-绍兴<60
+dict_KH_SX_under60 = {
+    '广东': [107, 3.8], '广西': [106, 3.7], '江苏': [39, 1.9], '浙江': [39, 1.9], '上海': [40, 2],
+    '天津': [90, 3.8], '河北': [87, 3.9], '黑龙江': [103, 4.2], '吉林': [86, 3.7], '辽宁': [105, 4.2],
+    '四川': [94, 4.2], '重庆': [90, 3.6], '贵州': [85, 3.8], '湖南': [87, 3.2],
+    '陕西': [88, 3.6], '山西': [86, 3.8], '湖北': [85, 3.4], '江西': [85, 3.1], '河南': [86, 3.3],
+    '安徽': [35, 2], '山东': [68, 3.2], '福建': [86, 3], '北京': [89, 4.1], '云南': [104, 4.7]
+}
+# 顺丰大件-唐山-<30
+dict_DJ_TS_under30 = {
+    '广东': [18, 7], '广西': [18, 7], '江苏': [18, 5], '浙江': [18, 5], '上海': [18, 5],
+    '天津': [13, 2], '河北': [14, 2], '黑龙江': [18, 5], '吉林': [18, 5], '辽宁': [18, 5],
+    '四川': [18, 6], '重庆': [18, 6], '湖南': [18, 5],
+    '山西': [16, 6], '湖北': [18, 5], '江西': [18, 5], '河南': [18, 5],
+    '安徽': [18, 5], '山东': [18, 5], '福建': [18, 5], '北京': [14, 2]
+}
+# 顺丰大件-唐山->=30
+dict_DJ_TS_up30 = {
+    '广东': [210, 7], '广西': [210, 7], '江苏': [150, 5], '浙江': [150, 5], '上海': [150, 5],
+    '天津': [71, 2], '河北': [72, 2],  '黑龙江': [150, 5], '吉林': [150, 5], '辽宁': [150, 5],
+    '四川': [180, 6], '重庆': [180, 6],'湖南': [150, 5], '山西': [190, 6], '湖北': [150, 5],
+    '江西': [150, 5], '河南': [150, 5], '安徽': [150, 5], '山东': [150, 5], '福建': [150, 5],
+    '北京': [72, 2]
+}
+# 顺丰大件-绍兴-<30
+dict_DJ_SX_under30 = {
+    '广东': [18, 7], '广西': [18, 7], '江苏': [12, 2], '浙江': [12, 2], '上海': [12, 2],'天津': [18, 5],
+    '河北': [18, 5], '黑龙江': [18, 6], '吉林': [18, 7], '辽宁': [18, 6], '四川': [18, 6], '重庆': [18, 6],
+    '湖南': [18, 5], '山西': [18, 5], '湖北': [18, 5], '江西': [18, 5],'河南': [18, 5], '安徽': [14, 2],
+    '山东': [18, 6], '福建': [18, 5], '北京': [18, 5]
+}
+# 顺丰大件-绍兴->=30
+dict_DJ_SX_up30 = {
+    '广东': [210, 7], '广西': [210, 7], '江苏': [72, 2], '浙江': [72, 2], '上海': [72, 2],'天津': [150, 5],
+    '河北': [150, 5], '黑龙江': [180, 6], '吉林': [210, 7], '辽宁': [180, 6], '四川': [180, 6], '重庆': [180, 6],
+    '湖南': [150, 5], '山西': [150, 5], '湖北': [150, 5], '江西': [150, 5], '河南': [150, 5],'安徽': [72, 2],
+    '山东': [180, 6], '福建': [150, 5], '北京': [150, 5]
+}
+# 顺丰特快-唐山
+dict_TK_TS = {
+    '广东': [23, 14], '广西': [23, 14], '江苏': [23, 10], '浙江': [23, 10], '上海': [23, 10], '天津': [14, 2],
+    '河北': [14, 2],'甘肃': [23, 10], '黑龙江': [23, 10], '吉林': [23, 10], '辽宁': [23, 10], '内蒙古': [23, 10],
+    '宁夏': [23, 10], '青海': [23, 10], '新疆': [23, 10], '西藏': [23, 10],'四川': [23, 13], '重庆': [23, 13],
+    '贵州': [23, 13], '湖南': [23, 10], '陕西': [23, 10],'山西': [23, 10],
+    '湖北': [23, 10], '江西': [23, 10], '河南': [22, 8], '安徽': [23, 10],
+    '山东': [22, 8], '福建': [23, 10], '北京': [14, 2], '云南': [23, 14], '海南': [23, 14]
+}
+# 顺丰特快-绍兴
+dict_TK_SX = {
+    '广东': [23, 13], '广西': [23, 13], '江苏': [12, 2], '浙江': [12, 2], '上海': [12, 2],'天津': [23, 10],
+    '河北': [23, 10],'甘肃': [23, 14], '黑龙江': [23, 14], '吉林': [23, 14], '辽宁': [23, 14], '内蒙古': [23, 14],
+    '宁夏': [23, 14], '青海': [23, 14], '新疆': [23, 14], '西藏': [23, 14],'四川': [23, 13], '重庆': [23, 13],
+    '贵州': [23, 13], '湖南': [23, 10], '陕西': [23, 10],'山西': [23, 10],
+    '湖北': [22, 8], '江西': [22, 8], '河南': [22, 8], '安徽': [14, 2],
+    '山东': [22, 10], '福建': [22, 10], '北京': [23, 10], '云南': [23, 14], '海南': [23, 14]
+}
+# 顺丰普快-唐山
+dict_PK_TS = {
+    '广东': [18, 7], '广西': [18, 7], '江苏': [23, 10], '浙江': [23, 10], '上海': [23, 10],'天津': [14, 2],
+    '河北': [14, 2],'甘肃': [18, 5], '黑龙江': [18, 5], '吉林': [18, 5], '辽宁': [18, 5], '内蒙古': [18, 5],
+    '宁夏': [18, 5],'青海': [18, 5], '新疆': [18, 5], '西藏': [18, 5],'四川': [18, 6], '重庆': [18, 6],
+    '贵州': [18, 6], '湖南': [18, 5], '陕西': [18, 5],'山西': [18, 5],
+    '湖北': [18, 5], '江西': [18, 5], '河南': [18, 5], '安徽': [18, 5],
+    '山东': [18, 5], '福建': [18, 5], '北京': [14, 2], '云南': [18, 6], '海南': [18, 7]
+}
+# 顺丰普快-绍兴
+dict_PK_SX = {
+    '广东': [18, 9], '广西': [18, 9], '江苏': [12, 2], '浙江': [12, 2], '上海': [12, 2],'天津': [18, 5],
+    '河北': [18, 5], '甘肃': [18, 7], '黑龙江': [18, 7], '吉林': [18, 7], '辽宁': [18, 7], '内蒙古': [18, 7],
+    '宁夏': [18, 7],'青海': [18, 7], '新疆': [18, 7], '西藏': [18, 7],'四川': [18, 6], '重庆': [18, 6],
+    '贵州': [18, 6], '湖南': [18, 5], '陕西': [18, 5], '山西': [18, 5],
+    '湖北': [18, 5], '江西': [18, 5], '河南': [18, 5], '安徽': [14, 2],
+    '山东': [18, 6], '福建': [18, 5], '北京': [18, 5], '云南': [18, 6], '海南': [18, 7]
+}
+#顺丰普快-沧州-<30
+dict_PK_CZ_under30 ={
+    '吉林':[18,5],'天津':[13,2]
+}
+#顺丰普快-沧州->30
+dict_PK_CZ_up30 ={
+    '吉林':[150,5],'天津':[71,2]
+}
+#顺丰特快-沧州
+dict_TK_CZ ={
+    '吉林':[23,10],'天津':[13,2]
+}
+#顺丰卡航-沧州-<60
+dict_KH_CZ_under60 ={
+    '吉林':[85,3.3],'天津':[40,2]
+}
+#顺丰卡航-沧州->60
+dict_KH_CZ_up60 ={
+    '吉林':[217,2.4],'天津':[120,1.4]
+}
+#顺丰普快-马鞍山-<30
+dict_PK_MAS_under30 ={
+    '上海':[14,2],'江苏':[14,2]
+}
+#顺丰普快-马鞍山->30
+dict_PK_MAS_up30 ={
+    '上海':[72,2],'江苏':[72,2]
+}
+#顺丰卡航-马鞍山-<60
+dict_KH_MAS_under60 ={
+    '上海':[40,2],'江苏':[40,2]
+}
+#顺丰卡航-马鞍山->60
+dict_KH_MAS_up60 ={
+    '上海':[120,1.5],'江苏':[120,1.7]
+}
+#顺丰普快-昆山-<30
+dict_PK_KS_under30 ={
+    '江苏':[12,2]
+}
+#顺丰普快-昆山->30
+dict_PK_KS_up30 ={
+    '江苏':[70,2]
+}
+#顺丰卡航-昆山-<60
+dict_KH_KS_under60 ={
+    '江苏':[39,1.9]
+}
+#顺丰卡航-昆山->60
+dict_KH_KS_up60 ={
+    '江苏':[115,1.5]
+}
+#顺丰特快-天津
+dict_TK_TJ={
+    '北京':[15,3],'天津':[13,2],'河北':[13,2],'河南':[22,8],'山东':[22,8],'黑龙江':[23,10],'吉林':[23,10],'辽宁':[22,8],
+    '上海':[23,10],'江苏':[23,10]
+}
+#顺丰标快-天津-<30
+dict_PK_TJ_under30={
+    '北京':[15,3],'天津':[13,2],'河北':[13,2],'河南':[18,5],'山东':[18,5],'黑龙江':[18,5],'吉林':[18,5],'辽宁':[18,5],
+    '上海':[18,5],'江苏':[18,5]
+}
+#顺丰标快-天津->30
+dict_PK_TJ_up30={
+    '北京':[102,3],'天津':[71,2],'河北':[71,2],'河南':[150,5],'山东':[150,5],'黑龙江':[150,5],'吉林':[150,5],'辽宁':[150,5],
+    '上海':[150,5],'江苏':[150,5]
+}
+#顺丰卡航-天津-<60
+dict_KH_TJ_under60={
+    '北京':[48,2.2],'天津':[40,1.8],'河北':[40,2],'河南':[86,2.9],'山东':[69,3],'黑龙江':[67,2.8],'吉林':[67,3.2],'辽宁':[66,2.9],
+    '上海':[89,3.4],'江苏':[89,3.5]
+}
+#顺丰卡航-天津->60
+dict_KH_TJ_up60={
+    '北京':[136,1.4],'天津':[112,1.4],'河北':[120,1.4],'河南':[202,1.6],'山东':[189,1.5],'黑龙江':[179,2.2],'吉林':[179,2.2],'辽宁':[182,2],
+    '上海':[225,2.7],'江苏':[229,2.8]
+}
+#顺丰大件-天津-<30
+dict_DJ_TJ_under30={
+    '北京':[15,3],'天津':[13,2],'河北':[13,2],'河南':[18,5],'山东':[18,5],'黑龙江':[18,5],'吉林':[18,5],'辽宁':[18,5],
+    '上海':[18,5],'江苏':[18,5]
+}
+#顺丰大件-天津->30
+dict_DJ_TJ_up30={
+    '北京':[102,3],'天津':[71,2],'河北':[71,2],'河南':[150,5],'山东':[150,5],'黑龙江':[150,5],'吉林':[150,5],'辽宁':[150,5],
+    '上海':[150,5],'江苏':[150,5]
+}
+# 定义函数Transport_price_calculate()
+def Transport_price_calculate (Transport_style, quality_act, Transport_address, warehouse_address, length_act):
+    if Transport_style == '快递' and quality_act < 50:
+        if warehouse_address == '唐山':
+            TK_TS = dict_TK_TS.get(Transport_address)  # 根据出发地调取字典
+            PK_TS = dict_PK_TS.get(Transport_address)
+            if quality_act >= 1:
+                pricemin_transport_shou = PK_TS[0]
+                pricemax_transport_shou = TK_TS[0]
+                pricemin_transport_xu = (quality_act - 1) * PK_TS[1]
+                pricemax_transport_xu = (quality_act - 1) * TK_TS[1]
+                pricemin_transport = pricemin_transport_shou + pricemin_transport_xu
+                pricemax_transport = pricemax_transport_shou + pricemax_transport_xu
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+                price_chao = 0
+                price_te = 0
+                price_ding = 0
+            else:
+                pricemin_transport_shou = PK_TS[0]
+                pricemax_transport_shou = TK_TS[0]
+                pricemin_transport_xu = 0
+                pricemax_transport_xu = 0
+                pricemax_transport = pricemin_transport_shou
+                pricemin_transport = pricemax_transport_shou
+                # print("首重费用参考区间为：{}~{}".format(PK_TS[0], TK_TS[0]))
+                price_shouzhong_str = str(PK_TS[0]) + '~' + str(TK_TS[0])
+                price_xuzhong_str = 0
+                price_qian = 8
+                price_chao = 0
+                price_te = 0
+                price_ding = 0
+        elif warehouse_address == '绍兴':
+            TK_SX = dict_TK_SX.get(Transport_address)
+            PK_SX = dict_PK_SX.get(Transport_address)
+            if quality_act >= 1:
+                pricemin_transport_shou = PK_SX[0]
+                pricemax_transport_shou = TK_SX[0]
+                pricemin_transport_xu = (quality_act - 1) * PK_SX[1]
+                pricemax_transport_xu = (quality_act - 1) * TK_SX[1]
+                pricemin_transport = pricemin_transport_shou + pricemin_transport_xu
+                pricemax_transport = pricemax_transport_shou + pricemax_transport_xu
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+                price_chao = 0
+                price_te = 0
+                price_ding = 0
+            else:
+                pricemin_transport_shou = PK_SX[0]
+                pricemax_transport_shou = TK_SX[0]
+                pricemin_transport_xu = 0
+                pricemax_transport_xu = 0
+                pricemin_transport = pricemin_transport_shou
+                pricemax_transport = pricemax_transport_shou
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = 0
+                price_qian = 8
+                price_chao = 0
+                price_te = 0
+                price_ding = 0
+        elif warehouse_address == "天津":
+            TK_TJ = dict_TK_TJ.get(Transport_address)
+            PK_TJ = dict_PK_TJ_under30.get(Transport_address)
+            if quality_act >= 1:
+                pricemin_transport_shou = PK_TJ[0]
+                pricemax_transport_shou = TK_TJ[0]
+                pricemin_transport_xu = (quality_act - 1) * PK_TJ[1]
+                pricemax_transport_xu = (quality_act - 1) * TK_TJ[1]
+                pricemin_transport = pricemin_transport_shou + pricemin_transport_xu
+                pricemax_transport = pricemax_transport_shou + pricemax_transport_xu
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+                price_chao = 0
+                price_te = 0
+                price_ding = 0
+            else:
+                pricemin_transport_shou = PK_TJ[0]
+                pricemax_transport_shou = TK_TJ[0]
+                pricemin_transport_xu = 0
+                pricemax_transport_xu = 0
+                pricemin_transport = pricemin_transport_shou + pricemin_transport_xu
+                pricemax_transport = pricemax_transport_shou + pricemax_transport_xu
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+                price_chao = 0
+                price_te = 0
+                price_ding = 0
+        else:
+            print("仓库地址错误")
+        # pricemax_transport_act = pricemax_transport / row_tuo_pcs
+        # pricemin_transport_act = pricemin_transport / row_tuo_pcs
+    elif Transport_style == '零担' or '专车' or quality_act >= 50 or length_act >= 1600:
+        if warehouse_address == '唐山':
+            KH_TS_under60 = dict_KH_TS_under60.get(Transport_address)  # 顺丰卡航-唐山-<60
+            DJ_TS_under30 = dict_DJ_TS_under30.get(Transport_address)  # 顺丰大件-唐山-<30
+            DJ_TS_up30 = dict_DJ_TS_up30.get(Transport_address)  # 顺丰大件-唐山->30
+            KH_TS_up60 = dict_KH_TS_up60.get(Transport_address)  # 顺丰卡航-唐山->60
+            if 30 <= quality_act < 60:
+                pricemin_transport_shou = KH_TS_under60[0]
+                pricemax_transport_shou = DJ_TS_up30[0]
+                pricemin_transport_xu = (quality_act - 20) * KH_TS_under60[1]
+                pricemax_transport_xu = (quality_act - 30) * DJ_TS_up30[1]
+                pricemin_transport = pricemin_transport_shou + pricemin_transport_xu
+                pricemax_transport = pricemax_transport_shou + pricemax_transport_xu
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+            elif 20 <= quality_act < 30:
+                pricemin_transport_shou = DJ_TS_under30[0]
+                pricemax_transport_shou = KH_TS_under60[0]
+                pricemin_transport_xu = (quality_act - 1) * DJ_TS_under30[1]
+                pricemax_transport_xu =  (quality_act - 20) * KH_TS_under60[1]
+                pd = (quality_act - 1) * DJ_TS_under30[1] + DJ_TS_under30[0]
+                ps = (quality_act - 20) * KH_TS_under60[1] + KH_TS_under60[0]
+                pricemax_transport = max(pd, ps)
+                pricemin_transport = min(pd, ps)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+            elif quality_act < 20:
+                pricemin_transport_shou = DJ_TS_under30[0]
+                pricemax_transport_shou = KH_TS_under60[0]
+                pricemin_transport_xu = (quality_act - 1) * DJ_TS_under30[1]
+                pricemax_transport_xu = 0
+                pd = (quality_act - 1) * DJ_TS_under30[1] + DJ_TS_under30[0]
+                ps = KH_TS_under60[0]
+                pricemax_transport = max(pd, ps)
+                pricemin_transport = min(pd, ps)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+            else:
+                pricemin_transport_shou = DJ_TS_up30[0]
+                pricemax_transport_shou = KH_TS_up60[0]
+                pricemin_transport_xu = (quality_act - 30) * DJ_TS_up30[1]
+                pricemax_transport_xu = (quality_act - 60) * KH_TS_up60[1]
+                pd = (quality_act - 30) * DJ_TS_up30[1] + DJ_TS_up30[0]
+                ps = (quality_act - 60) * KH_TS_up60[1] + KH_TS_up60[0]
+                pricemax_transport = max(pd, ps)
+                pricemin_transport = min(pd, ps)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+        elif warehouse_address == '绍兴':
+            KH_SX_under60 = dict_KH_SX_under60.get(Transport_address)  # 顺丰卡航-绍兴-<60
+            DJ_SX_under30 = dict_DJ_SX_under30.get(Transport_address)  # 顺丰大件-绍兴-<30
+            DJ_SX_up30 = dict_DJ_SX_up30.get(Transport_address)  # 顺丰大件-绍兴->30
+            KH_SX_up60 = dict_KH_SX_up60.get(Transport_address)  # 顺丰卡航-绍兴->60
+            if 30 <= quality_act < 60:
+                pricemin_transport_shou = KH_SX_under60[0]
+                pricemax_transport_shou = DJ_SX_up30[0]
+                pricemin_transport_xu = (quality_act - 20) * KH_SX_under60[1]
+                pricemax_transport_xu = (quality_act - 30) * DJ_SX_up30[1]
+                pricemax_transport = pricemin_transport_shou + pricemin_transport_xu
+                pricemin_transport = pricemax_transport_shou + pricemax_transport_xu
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+            elif 20 <= quality_act < 30:
+                pricemin_transport_shou = DJ_SX_under30[0]
+                pricemax_transport_shou = KH_SX_under60[0]
+                pricemin_transport_xu = (quality_act - 1) * DJ_SX_under30[1]
+                pricemax_transport_xu = (quality_act - 20) * KH_SX_under60[1]
+                pd = (quality_act - 1) * DJ_SX_under30[1] + DJ_SX_under30[0]
+                ps = (quality_act - 20) * KH_SX_under60[1] + KH_SX_under60[0]
+                pricemax_transport = max(pd, ps)
+                pricemin_transport = min(pd, ps)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+            elif quality_act < 20:
+                pricemin_transport_shou = DJ_SX_under30[0]
+                pricemax_transport_shou = KH_SX_under60[0]
+                pricemin_transport_xu = (quality_act - 1) * DJ_SX_under30[1]
+                pricemax_transport_xu = 0
+                pd = (quality_act - 1) * DJ_SX_under30[1] + DJ_SX_under30[0]
+                ps = KH_SX_under60[0]
+                pricemax_transport = max(pd, ps)
+                pricemin_transport = min(pd, ps)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+            else:
+                pricemin_transport_shou = DJ_SX_up30[0]
+                pricemax_transport_shou = KH_SX_up60[0]
+                pricemin_transport_xu = (quality_act - 30) * DJ_SX_up30[1]
+                pricemax_transport_xu = (quality_act - 60) * KH_SX_up60[1]
+                pd = (quality_act - 30) * DJ_SX_up30[1] + DJ_SX_up30[0]
+                ps = (quality_act - 60) * KH_SX_up60[1] + KH_SX_up60[0]
+                pricemax_transport = max(pd, ps)
+                pricemin_transport = min(pd, ps)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+        elif warehouse_address == '沧州':
+            KH_CZ_under60 = dict_KH_CZ_under60.get(Transport_address)  # 顺丰卡航-沧州-<60
+            KH_CZ_up60 = dict_KH_CZ_up60.get(Transport_address)  # 顺丰卡航-沧州->60
+            PK_CZ_under30 = dict_PK_CZ_under30.get(Transport_address)  # 顺丰普快-沧州-<30
+            PK_CZ_up30 = dict_PK_CZ_up30.get(Transport_address)  # 顺丰普快-沧州->30
+            TK_CZ = dict_TK_CZ.get(Transport_address)  # 顺丰特快-沧州
+            if quality_act < 30:
+                pricemin_transport_shou = PK_CZ_under30[0]
+                pricemax_transport_shou = KH_CZ_under60[0]
+                pricemin_transport_xu = (quality_act - 1) * PK_CZ_under30[1]
+                pricemax_transport_xu = (quality_act - 20) * KH_CZ_under60[1]
+                ps = (quality_act - 1) * PK_CZ_under30[1] + PK_CZ_under30[0]
+                pa = (quality_act - 20) * KH_CZ_under60[1] + KH_CZ_under60[0]
+                pricemin_transport = max(ps, pa)
+                pricemax_transport = max(ps, pa)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+            elif 30 <= quality_act < 60:
+                pricemin_transport_shou = KH_CZ_under60[0]
+                pricemax_transport_shou = PK_CZ_up30[0]
+                pricemin_transport_xu = (quality_act - 20) * KH_CZ_under60[1]
+                pricemax_transport_xu = (quality_act - 30) * PK_CZ_up30[1]
+                ps = (quality_act - 30) * PK_CZ_up30[1] + PK_CZ_up30[0]
+                pa = (quality_act - 20) * KH_CZ_under60[1] + KH_CZ_under60[0]
+                pricemin_transport = max(ps, pa)
+                pricemax_transport = max(ps, pa)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+            else:
+                pricemin_transport_shou = PK_CZ_up30[0]
+                pricemax_transport_shou = KH_CZ_up60[0]
+                pricemin_transport_xu = (quality_act - 30) * PK_CZ_up30[1]
+                pricemax_transport_xu = (quality_act - 60) * KH_CZ_up60[1]
+                ps = (quality_act - 30) * PK_CZ_up30[1] + PK_CZ_up30[0]
+                pa = (quality_act - 60) * KH_CZ_up60[1] + KH_CZ_up60[0]
+                pricemin_transport = max(ps, pa)
+                pricemax_transport = max(ps, pa)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+        elif warehouse_address == '马鞍山':
+            KH_MAS_under60 = dict_KH_MAS_under60.get(Transport_address)  # 顺丰卡航-马鞍山-<60
+            KH_MAS_up60 = dict_KH_MAS_up60.get(Transport_address)  # 顺丰卡航-马鞍山->60
+            PK_MAS_under30 = dict_PK_MAS_under30.get(Transport_address)  # 顺丰普快-马鞍山-<30
+            PK_MAS_up30 = dict_PK_MAS_up30.get(Transport_address)  # 顺丰普快-马鞍山->30
+            if quality_act < 30:
+                pricemin_transport_shou = PK_MAS_under30[0]
+                pricemax_transport_shou = KH_MAS_under60[0]
+                pricemin_transport_xu = (quality_act - 1) * PK_MAS_under30[1]
+                pricemax_transport_xu = (quality_act - 20) * KH_MAS_under60[1]
+                ps = (quality_act - 1) * PK_MAS_under30[1] + PK_MAS_under30[0]
+                pa = (quality_act - 20) * KH_MAS_under60[1] + KH_MAS_under60[0]
+                pricemin_transport = max(ps, pa)
+                pricemax_transport = max(ps, pa)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+            elif 30 <= quality_act < 60:
+                pricemin_transport_shou = KH_MAS_under60[0]
+                pricemax_transport_shou = PK_MAS_up30[0]
+                pricemin_transport_xu = (quality_act - 30) * PK_MAS_up30[1]
+                pricemax_transport_xu = (quality_act - 20) * KH_MAS_under60[1]
+                ps = (quality_act - 30) * PK_MAS_up30[1] + PK_MAS_up30[0]
+                pa = (quality_act - 20) * KH_MAS_under60[1] + KH_MAS_under60[0]
+                pricemin_transport = max(ps, pa)
+                pricemax_transport = max(ps, pa)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+            else:
+                pricemin_transport_shou = PK_MAS_up30[0]
+                pricemax_transport_shou = KH_MAS_up60[0]
+                pricemin_transport_xu = (quality_act - 30) * PK_MAS_up30[1]
+                pricemax_transport_xu = (quality_act - 60) * KH_MAS_up60[1]
+                ps = (quality_act - 30) * PK_MAS_up30[1] + PK_MAS_up30[0]
+                pa = (quality_act - 60) * KH_MAS_up60[1] + KH_MAS_up60[0]
+                pricemin_transport = max(ps, pa)
+                pricemax_transport = max(ps, pa)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+        elif warehouse_address == '昆山':
+            KH_KS_under60 = dict_KH_KS_under60.get(Transport_address)  # 顺丰卡航-马鞍山-<60
+            KH_KS_up60 = dict_KH_KS_up60.get(Transport_address)  # 顺丰卡航-马鞍山->60
+            PK_KS_under30 = dict_PK_KS_under30.get(Transport_address)  # 顺丰普快-马鞍山-<30
+            PK_KS_up30 = dict_PK_KS_up30.get(Transport_address)  # 顺丰普快-马鞍山->30
+            if quality_act < 30:
+                pricemin_transport_shou = PK_KS_under30[0]
+                pricemax_transport_shou = KH_KS_under60[0]
+                pricemin_transport_xu = (quality_act - 1) * PK_KS_under30[1]
+                pricemax_transport_xu = (quality_act - 20) * KH_KS_under60[1]
+                ps = (quality_act - 1) * PK_KS_under30[1] + PK_KS_under30[0]
+                pa = (quality_act - 20) * KH_KS_under60[1] + KH_KS_under60[0]
+                pricemin_transport = max(ps, pa)
+                pricemax_transport = max(ps, pa)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+            elif 30 <= quality_act < 60:
+                pricemin_transport_shou = KH_KS_under60[0]
+                pricemax_transport_shou = PK_KS_up30[0]
+                pricemin_transport_xu = (quality_act - 20) * KH_KS_under60[1]
+                pricemax_transport_xu = (quality_act - 30) * PK_KS_up30[1]
+                ps = (quality_act - 30) * PK_KS_up30[1] + PK_KS_up30[0]
+                pa = (quality_act - 20) * KH_KS_under60[1] + KH_KS_under60[0]
+                pricemin_transport = max(ps, pa)
+                pricemax_transport = max(ps, pa)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+            else:
+                pricemin_transport_shou = PK_KS_up30[0]
+                pricemax_transport_shou = KH_KS_up60[0]
+                pricemin_transport_xu = (quality_act - 30) * PK_KS_up30[1]
+                pricemax_transport_xu = (quality_act - 60) * KH_KS_up60[1]
+                ps = (quality_act - 30) * PK_KS_up30[1] + PK_KS_up30[0]
+                pa = (quality_act - 60) * KH_KS_up60[1] + KH_KS_up60[0]
+                pricemin_transport = max(ps, pa)
+                pricemax_transport = max(ps, pa)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+        elif warehouse_address == '天津':
+            DJ_TJ_under30 = dict_DJ_TJ_under30.get(Transport_address)
+            DJ_TJ_up30 = dict_DJ_TJ_up30.get(Transport_address)
+            KH_TJ_under60 = dict_KH_TJ_under60.get(Transport_address)
+            KH_TJ_up60 = dict_KH_TJ_up60.get(Transport_address)
+            if 30 <= quality_act < 60:
+                pricemin_transport_shou = KH_TJ_under60[0]
+                pricemax_transport_shou = DJ_TJ_up30[0]
+                pricemin_transport_xu = (quality_act - 20) * KH_TJ_under60[1]
+                pricemax_transport_xu = (quality_act - 30) * DJ_TJ_up30[1]
+                pricemax_transport = (quality_act - 30) * DJ_TJ_up30[1] + DJ_TJ_up30[0]
+                pricemin_transport = (quality_act - 20) * KH_TJ_under60[1] + KH_TJ_under60[0]
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+            elif 20 <= quality_act < 30:
+                pricemin_transport_shou = KH_TJ_under60[0]
+                pricemax_transport_shou = DJ_TJ_under30[0]
+                pricemin_transport_xu = (quality_act - 20) * KH_TJ_under60[1]
+                pricemax_transport_xu = (quality_act - 1) * DJ_TJ_under30[1]
+                pd = (quality_act - 1) * DJ_TJ_under30[1] + DJ_TJ_under30[0]
+                ps = (quality_act - 20) * KH_TJ_under60[1] + KH_TJ_under60[0]
+                pricemax_transport = max(pd, ps)
+                pricemin_transport = min(pd, ps)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+            elif quality_act < 20:
+                pricemin_transport_shou = DJ_TJ_under30[0]
+                pricemax_transport_shou = KH_TJ_under60[0]
+                pricemin_transport_xu = (quality_act - 1) * DJ_TJ_under30[1]
+                pricemax_transport_xu = 0
+                pd = (quality_act - 1) * DJ_TJ_under30[1] + DJ_TJ_under30[0]
+                ps = KH_TJ_under60[0]
+                pricemax_transport = max(pd, ps)
+                pricemin_transport = min(pd, ps)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+            else:
+                pricemin_transport_shou = KH_TJ_up60[0]
+                pricemax_transport_shou = DJ_TJ_up30[0]
+                pricemin_transport_xu = (quality_act - 60) * KH_TJ_up60[1]
+                pricemax_transport_xu = (quality_act - 30) * DJ_TJ_up30[1]
+                pd = (quality_act - 30) * DJ_TJ_up30[1] + DJ_TJ_up30[0]
+                ps = (quality_act - 60) * KH_TJ_up60[1] + KH_TJ_up60[0]
+                pricemax_transport = max(pd, ps)
+                pricemin_transport = min(pd, ps)
+                price_shouzhong_str = str(pricemin_transport_shou) + '~' + str(pricemax_transport_shou)
+                price_xuzhong_str = str(pricemin_transport_xu) + '~' + str(pricemax_transport_xu)
+                price_qian = 8
+        else:
+            print("仓库地址错误")
+        if quality_act >= 50 or length_act >= 1600:
+            price_chao = quality_act
+            price_te = 100
+            price_ding = 3
+            # print("本单可能含有超长超重附加费：{}和特殊入仓费：{}以及签单回执：{}和定时派送费用：{}".format(quality_act, 100, 8, 3))
+        else:
+            price_chao = 0
+            price_te = 100
+            price_ding = 3
+            # print("本单可能含有特殊入仓费：{}以及签单回执：{}和定时派送费用：{}".format(100, 8, 3))
+    return (pricemin_transport_shou, pricemax_transport_shou, pricemin_transport_xu, pricemax_transport_xu, pricemin_transport, pricemax_transport,
+            price_shouzhong_str, price_xuzhong_str, price_qian, price_chao, price_te, price_ding)
+# 定义函数Price_correction()
+def Price_correction (DN_quantity, price_RFQ, price_carton, price_baocai, price_carton_total, price_baocai_total, price_tuopan, pricemin_transport_act, pricemax_transport_act,NNN,MOQ,price_qian,price_chao,price_te,price_ding):
+    price_pack = round(price_carton + price_baocai + price_tuopan, 2)
+    price_transport = round((((pricemin_transport_act + pricemax_transport_act) / 2) / NNN) + ((price_qian + price_chao + price_te + price_ding) / MOQ), 2)
+    price_target_1 = round((price_transport + price_pack) * 1.06, 2)
+    # dict_tans[PN].append(price_target)
+    if price_RFQ < price_target_1 * 0.6:
+        price_pack_act = round(price_pack * 1.06, 2)
+        price_transport_act = round(((pricemin_transport_act + pricemax_transport_act) / 2) / NNN + (price_qian + price_chao + price_te + price_ding) / DN_quantity, 2)
+        price_target_8 = round((price_transport_act + price_pack) * 1.06)
+        if price_RFQ > price_target_8:
+            price_pack_act = round(price_pack * 1.06, 2)
+            price_transport_act = round(price_transport * 1.06, 2)
+            price_target_act = price_target_1
+            price_carton_act = price_carton
+            price_baocai_act = price_baocai
+            print("price_target_1")
+        else:
+            price_target_act = price_target_8
+            price_carton_act = price_carton
+            price_baocai_act = price_baocai
+            print("price_target_8")
+    elif price_target_1 * 0.6 < price_RFQ < price_target_1 * 0.85:
+        price_target_2 = round((price_transport + price_carton) * 1.06, 2)
+        print("price_target_2")
+        if price_RFQ > price_target_2:
+            price_target_3 = round((price_transport + price_pack) * 1.06 - price_baocai * 0.06, 2)
+            if price_RFQ < price_target_3 * 0.85:
+                price_target_5 = round((price_transport + price_pack) * 1.06 - price_baocai * 0.36, 2)
+                price_pack_act = round(((price_pack - price_baocai) * 1.06 + price_baocai * 0.7), 2)
+                price_transport_act = round((price_transport * 1.06), 2)
+                price_target_act = price_target_5
+                print("price_target_5")
+                price_carton_act = round((price_carton_total * (price_target_5 - price_transport * 1.06) / (price_target_1 - price_transport * 1.06) * 1.06), 2)
+                price_baocai_act = round((price_baocai_total * (price_target_5 - price_transport * 1.06) / (price_target_1 - price_transport * 1.06) * 1.06), 2)
+            else:
+                price_pack_act = round(price_carton * 1.06 + price_baocai, 2)
+                price_transport_act = round((price_transport * 1.06), 2)
+                price_target_act = price_target_3
+                print("price_target_3")
+                price_carton_act = round((price_carton_total * (price_target_3 - price_transport * 1.06) / (price_target_1 - price_transport * 1.06) * 1.06), 2)
+                price_baocai_act = round((price_baocai_total * (price_target_3 - price_transport * 1.06) / (price_target_1 - price_transport * 1.06) * 1.06), 2)
+        elif price_RFQ < price_target_2 * 0.85:
+            price_target_4 = round(price_pack + price_transport * 1.06, 2)
+            if price_RFQ < price_target_4 * 0.85:
+                price_target_6 = round(price_pack + price_transport, 2)
+                if price_RFQ < price_target_6 * 0.85:
+                    price_target_7 = round(price_pack + pricemin_transport_act / NNN, 2)
+                    if price_RFQ > price_target_7:
+                        price_pack_act  = price_pack
+                        price_transport_act = price_transport
+                        price_target_act = price_target_6
+                        print("price_target_6")
+                        price_carton_act = round((price_carton_total * (price_target_6 - price_transport) / (price_target_1 - price_transport * 1.06) * 1.06), 2)
+                        price_baocai_act = round((price_baocai_total * (price_target_6 - price_transport) / (price_target_1 - price_transport * 1.06) * 1.06), 2)
+                    else:
+                        price_pack_act = price_pack
+                        price_transport_act = pricemin_transport_act / NNN
+                        price_target_act = price_target_7
+                        print("price_target_7")
+                        price_carton_act = round((price_carton_total * (price_target_7 - pricemin_transport_act / NNN) / (price_target_1 - price_transport * 1.06) * 1.06), 2)
+                        price_baocai_act = round((price_baocai_total * (price_target_7 - pricemin_transport_act / NNN) / (price_target_1 - price_transport * 1.06) * 1.06), 2)
+                else:
+                    price_pack_act = price_pack
+                    price_transport_act = price_transport
+                    price_target_act = price_target_6
+                    print("price_target_6")
+                    price_carton_act = round((price_carton_total * (price_target_6 - price_transport) / (price_target_1 - price_transport * 1.06) * 1.06), 2)
+                    price_baocai_act = round((price_baocai_total * (price_target_6 - price_transport) / (price_target_1 - price_transport * 1.06) * 1.06), 2)
+            else:
+                price_pack_act = price_pack
+                price_transport_act = round(price_transport * 1.06, 2)
+                price_target_act= price_target_4
+                print("price_target_4")
+                price_carton_act = round((price_carton_total * (price_target_4 - price_transport * 1.06) / (price_target_1 - price_transport * 1.06) * 1.06), 2)
+                price_baocai_act = round((price_baocai_total * (price_target_4 - price_transport * 1.06) / (price_target_1 - price_transport * 1.06) * 1.06), 2)
+        else:
+            price_pack_act = round(price_pack * 1.06, 2)
+            price_transport_act = round(price_transport * 1.06, 2)
+            price_target_act = price_target_2
+            print("price_transport_act")
+            price_carton_act = round((price_carton_total * (price_target_2 - price_transport * 1.06) / (price_target_1 - price_transport * 1.06) * 1.06), 2)
+            price_baocai_act = round((price_baocai_total * (price_target_2 - price_transport * 1.06) / (price_target_1 - price_transport * 1.06) * 1.06), 2)
+    else:
+        price_pack_act = round(price_pack * 1.06, 2)
+        price_transport_act = round(price_transport * 1.06, 2)
+        price_target_act = price_target_1
+        print("price_target_1")
+        price_carton_act = round((price_carton_total * price_target_1 / price_target_1 * 1.06), 2)
+        price_baocai_act = round((price_baocai_total * price_target_1 / price_target_1 * 1.06), 2)
+    return(price_pack_act, price_transport_act, price_target_act, price_carton_act, price_baocai_act)
+# 键入并读取量产信息
+try:
+    RFQ_path = input(r'请输入备件报价表路径：')
+    pack_path = input(r'请输入包装说明书的路径：')
+    baseprice_path = r"\\S688f003\P_S_BC_Dept\P_S_BC\7_备件合同\500_AS PROC 备件采购\BuyerAndSales 打开这个\量产系统价格\ProQ系统量产价格.xlsx"
+    DN_path = r"\\S688f003\P_S_BC_Dept\P_S_BC\7_备件合同\500_AS PROC 备件采购\BuyerAndSales 打开这个\辅助文件\订单数量统计.xlsx"
+    base_file = pd.read_excel(baseprice_path)
+    DN_file = pd.read_excel(DN_path)
+    RFQ_file = pd.read_excel(RFQ_path, sheet_name="报价表",header=None)
+    len_RFQ = RFQ_file.shape[0]
+    # 创建记录数据的字典
+    dict_tans = {}
+    dict = {}
+    # 读取备件报价表，并输出，注意一致性
+    i=7   # 方便更改参数和读取零件号
+    charge_RFQ = pd.isnull(RFQ_file)
+    PN_RFQ = RFQ_file.iloc[i, 3]
+    while charge_RFQ.iloc[i, 3] == False:
+        base_price_RFQ = RFQ_file.iloc[i, 10]
+        pack_price_RFQ = RFQ_file.iloc[i, 11]
+        transport_price_RFQ = RFQ_file.iloc[i,12]
+        supplier_RFQ = RFQ_file.iloc[7, 7]   # 只读取第一行的
+        supplier_code_RFQ = RFQ_file.iloc[7, 6]  # 只读取第一行的
+        PN_name = RFQ_file.iloc[i, 5]
+        base_price_series = base_file.loc[(base_file['PN'] == PN_RFQ) & (base_file["Supplier number"] == supplier_code_RFQ), 'Base Price']
+        if base_price_series.empty == False:
+            base_price = float(base_price_series.iloc[0:1])
+        else:
+            base_price = "无量产价格"
+        DN_quantity_series = DN_file.loc[(DN_file['行标签'] == supplier_code_RFQ), '平均值项:Quantity']
+        if DN_quantity_series.empty == False:
+            DN_quantity = float(DN_quantity_series.iloc[0:1])
+        else:
+            DN_quantity = 1
+        print("零件号：{0}；供应商：{1}".format(PN_RFQ, supplier_RFQ))
+        print("量产基础价格为:{}".format(base_price))
+        print("备件基础价格为：{};包装费用为：{};运输费用为：{}".format(base_price_RFQ, pack_price_RFQ, transport_price_RFQ))
+        #先创建字典再存入字典
+        dict[PN_RFQ] = [base_price]
+        dict_tans.update(dict)
+        price_RFQ = pack_price_RFQ+transport_price_RFQ
+        dict_tans[PN_RFQ].append(base_price_RFQ)
+        dict_tans[PN_RFQ].append(price_RFQ)
+        #判断是否存在摊销
+        Amortization = RFQ_file.iloc[5,13]
+        if Amortization != "总价":
+            Amortization_price_RFQ = RFQ_file.iloc[i,13]
+            print("注意：该件存在摊销，{0}费用为：{1}".format(Amortization,Amortization_price_RFQ))
+            moq = int(RFQ_file.iloc[i, 15]) #MOQ位置可能改变，分开读取MOQ
+        elif Amortization == "总价":
+            moq = int(RFQ_file.iloc[i, 14]) #MOQ位置可能改变，分开读取MOQ
+        print("moq为：{}".format(moq))
+        dict_tans[PN_RFQ].append(moq)
+        dict_tans[PN_RFQ].append(PN_name)
+        #区分线
+        print("\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n")
+        i = i+1
+        if i < len_RFQ:
+            PN_RFQ = RFQ_file.iloc[i, 3]
+        else:
+            break
+    #读取包装
+    pack = pd.read_excel(pack_path, sheet_name=None, header=None)
+    #最大的循环
+    for i in pack.keys():
+        sheet_A = pack[i]
+        charge_pack = sheet_A.isnull()
+        col = 11
+        PN = sheet_A.iloc[col,1]
+        while charge_pack.iloc[col,1]==False:
+            pack_data = pack.get(i)
+            MPQ = int(pack_data.iloc[col, 3])
+            length = float(pack_data.iloc[col, 4])
+            width = float(pack_data.iloc[col, 5])
+            height = float(pack_data.iloc[col, 6])
+            v_carton = math.ceil((length*width*height) / 6000/1000)
+            pack_style = pack_data.iloc[col, 7]
+            weight = pack_data.iloc[col, 8]
+            dict_tans[PN].append(MPQ)
+            dict_tans[PN].append(v_carton)
+            dict_tans[PN].append(pack_style)
+            dict_tans[PN].append(weight)
+            # print("共有的零件号为：{}".format(PN))
+            # print("外包装体积重量为：{}".format(v_carton))
+            # print("包装类型为:{}".format(pack_style))
+            # print("最小包装数量为:{}".format(MPQ))
+            # print("长宽高分别为:{},{},{}".format(length, width, height))
+            # print("一个MPQ的货物质量为:{}".format(weight))
+            def find_row(num_value, file_path_pack):
+                for indexs in sheet_A.index:
+                    for i in range(len(sheet_A.loc[indexs].values)):
+                        if (str(sheet_A.loc[indexs].values[i]) == num_value):
+                            row = str(indexs).rstrip('L')
+                            return row
+            row_num = find_row('市', pack_path)
+            row_transport = eval(row_num) + 1
+            Transport_address = pack_data.iloc[row_transport, 1]
+            Transport_style = pack_data.iloc[row_transport, 3]
+            warehouse_address = pack_data.iloc[row_transport, 4]
+            dict_tans[PN].append(Transport_address)
+            dict_tans[PN].append(Transport_style)
+            dict_tans[PN].append(warehouse_address)
+            # print(dict_tans)
+            # print("货物发出地址:{}".format(Transport_address))
+            # print("仓库地址为:{}".format(warehouse_address))
+            # print("运输方式为:{}".format(Transport_style))
+            #----------------------------------
+            #判断包装类型
+            #------------------------------------
+            if pack_style == "纸箱":
+                moq = dict_tans.get(PN)[3]
+                weight_MOQ = moq*weight/MPQ
+                if length >=1200 or width>=1000 or weight>=20 or moq>=20 or weight_MOQ>=20:
+                    row_tuo = eval(row_num) - 3
+                    row_tuo_length = float(pack_data.iloc[row_tuo, 1])
+                    row_tuo_width = float(pack_data.iloc[row_tuo, 2])
+                    row_tuo_height = float(pack_data.iloc[row_tuo, 3])
+                    row_tuo_weight = float(pack_data.iloc[row_tuo, 5])
+                    row_tuo_max = int(pack_data.iloc[row_tuo,6])
+                    moq = dict_tans.get(PN)[3]
+                    MPQ = dict_tans.get(PN)[5]
+                    nba = min(MPQ, moq)
+                    Volume_tuo = row_tuo_length * row_tuo_width * row_tuo_height / 1000
+                    price_carton_total = round((((length+width)/10+5)*(2*width/10+(height/10)+3)*2*0.155*5.2/1000*1.15+12)*1.06,2)
+                    price_carton = round((((length+width)/10+5)*(2*width/10+(height/10)+3)*2*0.155*5.2/1000*1.15+12)/nba,2)
+                    price_baocai_total = round((length - 20) * (width - 20)  * 0.00404 / 100*1.06,2)
+                    price_baocai = round((length - 20) * (width - 20)  * 0.00404 / 100 / nba,2)
+                    dict_tans[PN].append("建议使用托盘")
+                    dict_tans[PN].append(price_carton_total)
+                    dict_tans[PN].append(price_baocai_total)
+                    # print("建议使用托盘")
+                    # print("整托体积(立方厘米)为：{}".format(Volume_tuo))
+                    # print("纸箱参考价(单个零件)为：{}".format(price_carton))
+                    # print("包材参考价(单个零件)为：{}".format(price_baocai))
+                    #托盘价格
+                    if row_tuo_length >= 2000:
+                        row_tuo_price_max = 170
+                        row_tuo_price_min = 80
+                    elif 1400 <= row_tuo_length < 2000:
+                        row_tuo_price_max = 110
+                        row_tuo_price_min = 80
+                    else:
+                        row_tuo_price_min = 60
+                        row_tuo_price_max = 90
+                    # print("托盘价格参考区间为：{}~{}".format(row_tuo_price_min,row_tuo_price_max))
+                    row_tuo_price_min_test = round(row_tuo_price_min * 1.06, 2)
+                    row_tuo_price_max_test = round(row_tuo_price_max * 1.06, 2)
+                    price_tuopan_str = str(row_tuo_price_min_test)+'~'+str(row_tuo_price_max_test)
+                    dict_tans[PN].append(price_tuopan_str)
+                    if MPQ <= moq:
+                        tuo_n_act = math.ceil(moq / MPQ)
+                        n = min(tuo_n_act, row_tuo_max)
+                        row_tuo_pcs = n * MPQ
+                    else:
+                        row_tuo_pcs = moq
+                    # print("托盘实际装载零件数为：{}".format(row_tuo_pcs))
+                    price_tuopan = round((row_tuo_price_min_test + row_tuo_price_max_test) / 2 / row_tuo_pcs, 2)
+                    #单箱实际装载零件数量
+                    dict_tans[PN].append(nba)
+                    dict_tans[PN].append(row_tuo_pcs)
+                    pricemax_pack = round(price_carton + row_tuo_price_max/row_tuo_pcs+price_baocai, 2)
+                    pricemin_pack = round(price_carton + row_tuo_price_min/row_tuo_pcs+price_baocai, 2)
+                    # print("包装价格(单个零件)参考区间为:{0}~{1}（未乘1.06）".format(pricemin_pack, pricemax_pack))
+                # 读取运输数据
+                    v_tuo = math.ceil(Volume_tuo / 6000)
+                    # print("整托体积重量为：{}".format(v_tuo))
+                    dict_tans[PN].append(v_tuo)
+                    if MPQ <= moq:
+                        tuo_n_act = math.ceil(moq/MPQ)
+                        n = min(tuo_n_act, row_tuo_max)
+                        row_tuo_total = row_tuo_weight + n * weight
+                        quality_act = max(row_tuo_total, v_tuo)
+                    else:
+                        n = 1
+                        row_tuo_total = row_tuo_weight + n * weight
+                        quality_act = max(row_tuo_total, v_tuo)
+                    # print("整托实际重量为：{}".format(row_tuo_total))
+                    # print("实际计费重量为：{}".format(quality_act))
+                    dict_tans[PN].append(row_tuo_total)
+                    row_tuo_pcs = n * nba
+                    # print("整托实际装载零件数量为：{}".format(row_tuo_pcs))
+                    Transport_style = dict_tans.get(PN)[10]
+                    Transport_address = dict_tans.get(PN)[9]
+                    warehouse_address = dict_tans.get(PN)[11]
+                    length_act = row_tuo_length
+                    #计算运费
+                    pricemin_transport_shou = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[0]
+                    pricemax_transport_shou = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[1]
+                    pricemin_transport_xu = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[2]
+                    pricemax_transport_xu = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[3]
+                    pricemin_transport = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[4]
+                    pricemax_transport = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[5]
+                    price_shouzhong_str = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[6]
+                    price_xuzhong_str = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[7]
+                    price_qian = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[8]
+                    price_chao = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[9]
+                    price_te = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[10]
+                    price_ding = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[11]
+                    dict_tans[PN].append(price_shouzhong_str)
+                    dict_tans[PN].append(price_xuzhong_str)
+                    dict_tans[PN].append(price_qian)
+                    dict_tans[PN].append(price_chao)
+                    dict_tans[PN].append(price_te)
+                    dict_tans[PN].append(price_ding)
+                    # 价格修正
+                    row_tuo_pcs = dict_tans.get(PN)[17]
+                    # print(row_tuo_pcs)
+                    price_RFQ = dict_tans.get(PN)[2]
+                    price_pack_act = Price_correction(DN_quantity, price_RFQ, price_carton, price_baocai, price_carton_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, row_tuo_pcs, moq, price_qian, price_chao, price_te, price_ding)[0]
+                    price_transport_act = Price_correction(DN_quantity, price_RFQ, price_carton, price_baocai, price_carton_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, row_tuo_pcs, moq, price_qian, price_chao, price_te, price_ding)[1]
+                    price_target_act = Price_correction(DN_quantity, price_RFQ, price_carton, price_baocai, price_carton_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, row_tuo_pcs, moq, price_qian, price_chao, price_te, price_ding)[2]
+                    # print(">>>>>>>>>>")
+                    # print(price_transport_act)
+                    price_carton_act = Price_correction(DN_quantity, price_RFQ, price_carton, price_baocai, price_carton_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, row_tuo_pcs, moq, price_qian, price_chao, price_te, price_ding)[3]
+                    price_baocai_act = Price_correction(DN_quantity, price_RFQ, price_carton, price_baocai, price_carton_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, row_tuo_pcs, moq, price_qian, price_chao, price_te, price_ding)[4]
+                    dict_tans[PN].append(price_pack_act)
+                    dict_tans[PN].append(price_transport_act)
+                    dict_tans[PN].append(price_target_act)
+                    dict_tans[PN].append(price_carton_act)
+                    dict_tans[PN].append(price_baocai_act)
+                # 判断包装类型---不使用托盘
+                # ------------------------------------
+                else:
+                    moq = dict_tans.get(PN)[3]
+                    MPQ = dict_tans.get(PN)[5]
+                    nba = min(MPQ, moq)
+                    price_carton = round((((length + width) / 10 + 5) * ( 2 * width / 10 + (height / 10) + 3) * 2 * 0.155 * 5.2 / 1000 * 1.15 + 12)/nba, 2)
+                    price_carton_total = round((((length + width) / 10 + 5) * ( 2 * width / 10 + (height / 10) + 3) * 2 * 0.155 * 5.2 / 1000 * 1.15 + 12)*1.06, 2)
+                    price_baocai = round(((length - 20) * (width - 20) * 0.00404 / 100)/nba, 2)
+                    price_baocai_total = round(((length - 20) * (width - 20) * 0.00404 / 100)*1.06, 2)
+                    price_tuopan = 0
+                    # print("不建议使用托盘")
+                    # print("包装体积为(立方厘米):{:.2f}".format(v_carton))
+                    # print("纸箱(单个零件)参考价为：{}".format(price_carton))
+                    # print("单箱装载零件数为：{}".format(nba))
+                    # print("包材(单个零件)参考价为：{}".format(price_baocai))
+                    # print("包装(单个零件)参考价为:{}元".format(price_pack))
+                    # print("外包装体积重量为：{}".format(v_carton))
+                    dict_tans[PN].append("不建议使用托盘")
+                    dict_tans[PN].append(price_carton_total)
+                    dict_tans[PN].append(price_baocai_total)
+                    dict_tans[PN].append('未使用托盘')
+                    dict_tans[PN].append(nba)
+                    dict_tans[PN].append('未使用托盘')
+                    dict_tans[PN].append('未使用托盘')
+                    dict_tans[PN].append('未使用托盘')
+                #计算运费
+                    Transport_style = dict_tans.get(PN)[10]
+                    quality_act = max(weight, v_carton)
+                    Transport_address = dict_tans.get(PN)[9]
+                    warehouse_address = dict_tans.get(PN)[11]
+                    length_act = length
+                    pricemin_transport_shou = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[0]
+                    pricemax_transport_shou = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[1]
+                    pricemin_transport_xu = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[2]
+                    pricemax_transport_xu = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[3]
+                    pricemin_transport = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[4]
+                    pricemax_transport = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[5]
+                    price_shouzhong_str = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[6]
+                    price_xuzhong_str = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[7]
+                    price_qian = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[8]
+                    price_chao = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[9]
+                    price_te = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[10]
+                    price_ding = Transport_price_calculate(Transport_style,quality_act,Transport_address,warehouse_address,length_act)[11]
+                    dict_tans[PN].append(price_shouzhong_str)
+                    dict_tans[PN].append(price_xuzhong_str)
+                    dict_tans[PN].append(price_qian)
+                    dict_tans[PN].append(price_chao)
+                    dict_tans[PN].append(price_te)
+                    dict_tans[PN].append(price_ding)
+                    # print(dict_tans)
+                    # 价格修正
+                    nba = dict_tans.get(PN)[16]
+                    price_RFQ = dict_tans.get(PN)[2]
+                    price_pack_act = Price_correction(DN_quantity, price_RFQ, price_carton, price_baocai, price_carton_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, nba, moq, price_qian, price_chao, price_te, price_ding)[0]
+                    price_transport_act = Price_correction(DN_quantity, price_RFQ, price_carton, price_baocai, price_carton_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, nba, moq,price_qian, price_chao, price_te, price_ding)[1]
+                    price_target_act = Price_correction(DN_quantity, price_RFQ, price_carton, price_baocai, price_carton_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, nba, moq, price_qian, price_chao, price_te, price_ding)[2]
+                    price_carton_act = Price_correction(DN_quantity, price_RFQ, price_carton, price_baocai, price_carton_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, nba, moq, price_qian, price_chao, price_te, price_ding)[3]
+                    price_baocai_act = Price_correction(DN_quantity, price_RFQ, price_carton, price_baocai, price_carton_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, nba, moq, price_qian, price_chao, price_te, price_ding)[4]
+                    dict_tans[PN].append(price_pack_act)
+                    dict_tans[PN].append(price_transport_act)
+                    dict_tans[PN].append(price_target_act)
+                    dict_tans[PN].append(price_carton_act)
+                    dict_tans[PN].append(price_baocai_act)
+            elif pack_style == "木箱":
+                dict_tans[PN].append("使用木箱包装")
+                moq = dict_tans.get(PN)[3]
+                MPQ = dict_tans.get(PN)[5]
+                nba = min(MPQ, moq)
+                Volume_wood = length * width * height / 1000
+                if Volume_wood <= 600000:
+                    pricemin_woodenbox_total = Volume_wood / 1000000 * 520.91 + 161.37
+                    pricemax_woodenbox_total = Volume_wood / 1000000 * 520.91 + 441.37
+                    pricemin_woodenbox_total_test = round(pricemin_woodenbox_total * 1.06, 2)
+                    pricemax_woodenbox_total_test = round(pricemax_woodenbox_total * 1.06, 2)
+                    price_woodenbox_total = round((pricemin_woodenbox_total+pricemax_woodenbox_total)/2, 2)
+                    price_baocai_total = round((length - 20) * (width - 20) * 0.00404 / 100 * 2, 2)
+                    price_baocai_total_test = round(((length - 20) * (width - 20) * 0.00404 / 100 * 2) * 1.06, 2)
+                    pricemin_woodenbox = round(pricemin_woodenbox_total / nba, 2)
+                    pricemax_woodenbox = round(pricemax_woodenbox_total / nba, 2)
+                    price_woodenbox = round(price_woodenbox_total / nba, 2)
+                    price_baocai = round(price_baocai_total / nba, 2)
+                    pricemin_pack = pricemin_woodenbox + price_baocai
+                    pricemax_pack = pricemax_woodenbox + price_baocai
+                    price_tuopan = 0
+                    price_woodenbox_str = str(pricemin_woodenbox_total_test)+'~'+str(pricemax_woodenbox_total_test)
+                    dict_tans[PN].append(price_woodenbox_str)
+                    dict_tans[PN].append(price_baocai_total_test)
+                    dict_tans[PN].append("使用木箱，可能无需托盘")
+                    # print("木箱价格(单个零件)参考区间为：{}~{}元(未乘1.06)".format(pricemin_woodenbox, pricemax_woodenbox))
+                    # print("包材(单个零件)参考价为：{}元（未乘1.06）".format(price_baocai))
+                    # print("包装价格参考区间为:{0}~{1}元（未乘1.06）".format(pricemin_pack, pricemax_pack))
+                else:
+                    pricemin_woodenbox_total = Volume_wood / 1000000 * 69.598 + 695.26
+                    pricemax_woodenbox_total = Volume_wood / 1000000 * 163.52 + 807.06
+                    pricemin_woodenbox = round(pricemin_woodenbox_total / nba, 2)
+                    pricemax_woodenbox = round(pricemax_woodenbox_total / nba, 2)
+                    price_woodenbox_total = round((pricemin_woodenbox_total + pricemax_woodenbox_total) / 2, 2)
+                    price_woodenbox = round(price_woodenbox_total / nba, 2)
+                    price_baocai_total = round((length - 20) * (width - 20) * 0.00404 / 100 * 2, 2)
+                    price_baocai = round(price_baocai_total / nba, 2)
+                    price_baocai_total_test = round(((length - 20) * (width - 20) * 0.00404 / 100*2)*1.06,2)
+                    pricemin_pack = pricemin_woodenbox+price_baocai
+                    pricemax_pack = pricemax_woodenbox+price_baocai
+                    pricemin_woodenbox_total_test = round(pricemin_woodenbox_total * 1.06, 2)
+                    pricemax_woodenbox_total_test = round(pricemax_woodenbox_total * 1.06, 2)
+                    price_tuopan = 0
+                    price_woodenbox_str = str(pricemin_woodenbox_total_test) + '~' + str(pricemax_woodenbox_total_test)
+                    dict_tans[PN].append(price_woodenbox_str)
+                    dict_tans[PN].append(price_baocai_total_test)
+                    dict_tans[PN].append("使用木箱，可能无需托盘")
+                    # print("木箱价格(单个零件)参考区间为：{}~{}元(未乘1.06)".format(pricemin_woodenbox, pricemax_woodenbox))
+                    # print("包材(单个零件)参考价为：{}元（未乘1.06）".format(price_baocai))
+                    # print("包装价格参考区间为:{0}~{1}元（未乘1.06）".format(pricemin_pack, pricemax_pack))
+                dict_tans[PN].append(nba)
+                dict_tans[PN].append("使用木箱，可能无需托盘")
+                v = math.ceil(Volume_wood / 6000)
+                dict_tans[PN].append(v)
+                dict_tans[PN].append(weight)
+                # print("外包装体积重量为：{}".format(v))
+                quality_act = max(weight, v)
+                Transport_style = dict_tans.get(PN)[10]
+                Transport_address = dict_tans.get(PN)[9]
+                warehouse_address = dict_tans.get(PN)[11]
+                length_act = length
+                pricemin_transport_shou = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[0]
+                pricemax_transport_shou = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[1]
+                pricemin_transport_xu = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[2]
+                pricemax_transport_xu = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[3]
+                pricemin_transport = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[4]
+                pricemax_transport = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[5]
+                price_shouzhong_str = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[6]
+                price_xuzhong_str = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[7]
+                price_qian = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[8]
+                price_chao = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[9]
+                price_te = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[10]
+                price_ding = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[11]
+                dict_tans[PN].append(price_shouzhong_str)
+                dict_tans[PN].append(price_xuzhong_str)
+                dict_tans[PN].append(price_qian)
+                dict_tans[PN].append(price_chao)
+                dict_tans[PN].append(price_te)
+                dict_tans[PN].append(price_ding)
+                # 价格修正
+                nba = dict_tans.get(PN)[16]
+                price_RFQ = dict_tans.get(PN)[2]
+                price_pack_act = Price_correction(DN_quantity, price_RFQ, price_woodenbox, price_baocai, price_woodenbox_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, nba, moq, price_qian, price_chao, price_te, price_ding)[0]
+                price_transport_act = Price_correction(DN_quantity, price_RFQ, price_woodenbox, price_baocai, price_woodenbox_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, nba, moq, price_qian, price_chao, price_te, price_ding)[1]
+                price_target_act = Price_correction(DN_quantity, price_RFQ, price_woodenbox, price_baocai, price_woodenbox_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, nba, moq, price_qian, price_chao, price_te, price_ding)[2]
+                price_carton_act = Price_correction(DN_quantity, price_RFQ, price_woodenbox, price_baocai, price_woodenbox_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, nba, moq, price_qian, price_chao, price_te, price_ding)[3]
+                price_baocai_act = Price_correction(DN_quantity, price_RFQ, price_woodenbox, price_baocai, price_woodenbox_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, nba, moq, price_qian, price_chao, price_te, price_ding)[4]
+                dict_tans[PN].append(price_pack_act)
+                dict_tans[PN].append(price_transport_act)
+                dict_tans[PN].append(price_target_act)
+                dict_tans[PN].append(price_carton_act)
+                dict_tans[PN].append(price_baocai_act)
+            else:
+                dict_tans[PN].append("使用木框架包装")
+                Volume_wood = length * width * height / 1000
+                moq = dict_tans.get(PN)[3]
+                MPQ = dict_tans.get(PN)[5]
+                nba = min(MPQ, moq)
+                if Volume_wood <= 600000:
+                    pricemin_woodenbox_total = round(Volume_wood / 1000000 * 260.455 + 80.685, 2)
+                    pricemax_woodenbox_total = round(Volume_wood / 1000000 * 260.455 + 220.685, 2)
+                    price_woodenbox_total = round((pricemin_woodenbox_total + pricemax_woodenbox_total) / 2,2)
+                    pricemin_woodenbox_total_test = round(pricemin_woodenbox_total * 1.06, 2)
+                    pricemax_woodenbox_total_test = round(pricemax_woodenbox_total * 1.06, 2)
+                    pricemin_woodenbox = round((Volume_wood / 1000000 * 260.455 + 80.685) / nba, 2)
+                    pricemax_woodenbox = round((Volume_wood / 1000000 * 260.455 + 220.685) / nba, 2)
+                    price_woodenbox = round((pricemin_woodenbox + pricemax_woodenbox)/ 2, 2)
+                    price_baocai_total = round((length - 20) * (width - 20)  * 0.00404 / 100*2, 2)
+                    price_baocai_total_test = round(price_baocai_total * 1.06, 2)
+                    price_baocai = round(((length - 20) * (width - 20) * 0.00404 / 100*2) / nba, 2)
+                    pricemin_pack = pricemin_woodenbox + price_baocai
+                    pricemax_pack = pricemax_woodenbox + price_baocai
+                    price_pack = round((pricemin_pack + pricemax_pack)/2, 2)
+                    price_tuopan = 0
+                    price_woodenbox_str = str(pricemin_woodenbox_total_test)+'~'+str(pricemax_woodenbox_total_test)
+                    dict_tans[PN].append(price_woodenbox_str)
+                    dict_tans[PN].append(price_baocai_total_test)
+                    dict_tans[PN].append("木框架可能不要要托盘")
+                    dict_tans[PN].append(nba)
+                    dict_tans[PN].append(nba)
+                    # print("木框架价格(单个零件)参考区间为：{}~{}元".format(pricemin_woodenbox, pricemax_woodenbox))
+                    # print("包材价格(单个零件)参考价为：{}元".format(price_baocai))
+                    # print("包装价格参考区间为:{0}~{1}元".format(pricemin_pack, pricemax_pack))
+                else:
+                    pricemin_woodenbox_total = round(Volume_wood / 1000000 * 34.799 + 347.63, 2)
+                    pricemax_woodenbox_total = round(Volume_wood / 1000000 * 339.875 + 341.055, 2)
+                    pricemin_woodenbox_total_test = round(pricemin_woodenbox_total * 1.06, 2)
+                    pricemax_woodenbox_total_test = round(pricemax_woodenbox_total * 1.06, 2)
+                    price_woodenbox_total = round((pricemin_woodenbox_total + pricemax_woodenbox_total) / 2, 2)
+                    pricemin_woodenbox = round(pricemin_woodenbox_total / nba, 2)
+                    pricemax_woodenbox = round(pricemax_woodenbox_total / nba, 2)
+                    price_woodenbox = round((pricemin_woodenbox + pricemax_woodenbox)/ 2, 2)
+                    price_baocai_total = round((length - 20) * (width - 20) * 0.00404 / 100 * 2, 2)
+                    price_baocai_total_test = round(price_baocai_total * 1.06, 2)
+                    price_baocai = round(price_baocai_total/nba, 2)
+                    pricemin_pack = pricemin_woodenbox + price_baocai
+                    pricemax_pack = pricemax_woodenbox + price_baocai
+                    price_tuopan = 0
+                    price_woodenbox_str = str(pricemin_woodenbox_total_test) + '~' + str(pricemax_woodenbox_total_test)
+                    dict_tans[PN].append(price_woodenbox_str)
+                    dict_tans[PN].append(price_baocai_total_test)
+                    dict_tans[PN].append("木框架可能不要要托盘")
+                    dict_tans[PN].append(nba)
+                    dict_tans[PN].append(nba)
+                    # print("木框架价格(单个零件)参考区间为：{}~{}元".format(pricemin_woodenbox, pricemax_woodenbox))
+                    # print("包材价格(单个零件)参考价为：{}元".format(price_baocai))
+                    # print("包装价格参考区间为:{0}~{1}元".format(pricemin_pack, pricemax_pack))
+                v = math.ceil(Volume_wood / 6000)
+                dict_tans[PN].append(v)
+                dict_tans[PN].append(weight)
+                # print("外包装体积重量为：{}".format(v))
+                quality_act = max(weight, v)
+                Transport_style = dict_tans.get(PN)[10]
+                Transport_address = dict_tans.get(PN)[9]
+                warehouse_address = dict_tans.get(PN)[11]
+                length_act = length
+                pricemin_transport_shou = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[0]
+                pricemax_transport_shou = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[1]
+                pricemin_transport_xu = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[2]
+                pricemax_transport_xu = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[3]
+                pricemin_transport = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[4]
+                pricemax_transport = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[5]
+                price_shouzhong_str = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[6]
+                price_xuzhong_str = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[7]
+                price_qian = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[8]
+                price_chao = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[9]
+                price_te = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[10]
+                price_ding = Transport_price_calculate(Transport_style, quality_act, Transport_address, warehouse_address, length_act)[11]
+                dict_tans[PN].append(price_shouzhong_str)
+                dict_tans[PN].append(price_xuzhong_str)
+                dict_tans[PN].append(price_qian)
+                dict_tans[PN].append(price_chao)
+                dict_tans[PN].append(price_te)
+                dict_tans[PN].append(price_ding)
+                # 价格修正
+                nba = dict_tans.get(PN)[16]
+                price_RFQ = dict_tans.get(PN)[2]
+                price_pack_act = Price_correction(DN_quantity, price_RFQ, price_woodenbox, price_baocai, price_woodenbox_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, nba, moq, price_qian, price_chao, price_te, price_ding)[0]
+                price_transport_act = Price_correction(DN_quantity, price_RFQ, price_woodenbox, price_baocai, price_woodenbox_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, nba, moq, price_qian, price_chao, price_te, price_ding)[1]
+                price_target_act = Price_correction(DN_quantity, price_RFQ, price_woodenbox, price_baocai, price_woodenbox_total, price_baocai_total, price_tuopan, pricemin_transport, pricemax_transport, nba, moq, price_qian, price_chao, price_te, price_ding)[2]
+                price_carton_act = Price_correction(DN_quantity, price_RFQ, price_woodenbox, price_baocai, price_woodenbox_total, price_baocai_total,  price_tuopan, pricemin_transport, pricemax_transport, nba, moq, price_qian, price_chao, price_te, price_ding)[3]
+                price_baocai_act = Price_correction(DN_quantity, price_RFQ, price_woodenbox, price_baocai, price_woodenbox_total, price_baocai_total,  price_tuopan, pricemin_transport, pricemax_transport, nba, moq, price_qian, price_chao, price_te, price_ding)[4]
+                dict_tans[PN].append(price_pack_act)
+                dict_tans[PN].append(price_transport_act)
+                dict_tans[PN].append(price_target_act)
+                dict_tans[PN].append(price_carton_act)
+                dict_tans[PN].append(price_baocai_act)
+                print(dict_tans)
+            col = col + 1
+            PN = sheet_A.loc[col, 1]
+            if PN == "1.2 要求条件 Condition Requirement" or charge_pack.iloc[col, 1] == True:
+                break
+    print(dict_tans)
+    save_file=input("请输入要保存到地址：")
+    url = save_file+str(datetime.date.today())+'-'+"price assistant.xlsx"  # 桌面路径与文件名相加
+    workbook = xlsxwriter.Workbook(url,{'nan_inf_to_errors': True})  # 新建excel表,可写不使用以上函数自己写入要保存的路径
+    sht1=workbook.add_worksheet(name='Price Assistant')
+    sht2=workbook.add_worksheet(name='Sheet2')
+    #     sht1 = workbook.add_worksheet(name=aaa)
+    style1=workbook.add_format({
+        'align': 'left',  # 水平靠左
+        'valign': 'vcentre',  # 垂直居中
+        'bold': True,  # 加粗（默认False）
+        'font_name':'汉仪中宋简',
+        'font_size': 14
+    })
+    style2=workbook.add_format({
+        'align': 'left',  # 水平靠左
+        'valign': 'vcentre',  # 垂直居中
+        'font_name': '汉仪中宋简',
+        'font_size': 14
+    })
+    style3=workbook.add_format({
+        'align': 'left',  # 水平靠左
+        'valign': 'vcentre',  # 垂直居中
+        'font_name': '汉仪中宋简',
+        'fg_color':'#F0FFF0',
+        'font_size': 14
+    })
+    style4 = workbook.add_format({
+        'align': 'left',  # 水平靠左
+        'valign': 'vcentre',  # 垂直居中
+        'font_name': '汉仪中宋简',
+        'fg_color': '#F4D088',
+        'font_size': 14
+    })
+    style5 = workbook.add_format({
+        'align': 'left',  # 水平靠左
+        'valign': 'vcentre',  # 垂直居中
+        'font_name': '汉仪中宋简',
+        'font_size': 12,
+        'text_wrap':True
+    })
+    style55 = workbook.add_format({
+        'align': 'left',  # 水平靠左
+        'valign': 'vcentre',  # 垂直居中
+        'font_name': '汉仪中宋简',
+        'font_size': 12,
+        'fg_color': '#F4D088',
+        'text_wrap':True
+    })
+    style6 = workbook.add_format({
+        'align': 'centre',  # 水平靠左
+        'valign': 'vcentre',  # 垂直居中
+        'font_name': '汉仪中宋简',
+        'font_size': 18,
+        'bold': True,
+        'border':2,
+        'bg_color': '#8896BE'
+    })
+    style7 = workbook.add_format({
+        'align': 'left',  # 水平靠左
+        'valign': 'vcentre',  # 垂直居中
+        'bg_color': '#8896BE'
+    })
+    style8 = workbook.add_format({
+        'align': 'left',  # 水平靠左
+        'valign': 'vcentre',  # 垂直居中
+        'font_name': '汉仪中宋简',
+        'font_size': 12,
+        'text_wrap':True,
+        'bg_color':'#808080'
+    })
+    sht1.merge_range('B1:E1', 'Price Assistant', style6)
+    sht2.merge_range('B1:E1', 'Price Assistant', style6)
+    sht1.set_column('A:A',1)
+    sht2.set_column('A:A',1)
+    sht1.set_column('B:E', 38)
+    sht2.set_column('B:E', 38)
+    sht1.set_row(0, 40)
+    sht2.set_row(0, 40)
+    # sht1.write(1,3,'MOQ')
+    J=1
+    n=1
+    s=2
+    z=3
+    x=4
+    c=8
+    v=6
+    b=7
+    mm=1
+    nn=1
+    ss=2
+    zz=3
+    xx=4
+    cc=5
+    vv=6
+    bb=7
+    dd=8
+    ff=9
+    gg=10
+    hh=11
+    jj=12
+    kk=13
+    ll=14
+    qq=15
+    ww=16
+    ee=17
+    rr=18
+    tt=19
+    while J<= len(dict_tans):
+        for aaa in dict_tans.keys():
+            sht1.set_row(n, 30)
+            sht1.set_row(s, 30)
+            sht1.set_row(z, 30)
+            sht1.set_row(x, 30)
+            sht1.set_row(c, 10)
+            sht1.set_row(v, 30)
+            sht1.set_row(b, 30)
+            sht1.write(n, 1, '零件号', style1)
+            sht1.write(n, 2, '零件名称', style1)
+            sht1.write(n, 3, '供应商代码', style1)
+            sht1.write(n, 4, '供应商', style1)
+            # print(aaa)
+            sht1.write(s,1,aaa,style5)
+            sht1.write(7, 5, '=HYPERLINK("#Sheet2!R3C2","价格逻辑")')
+            sht1.write(15, 5, '=HYPERLINK("#Sheet2!R22C2","价格逻辑")')
+            sht1.write(23, 5, '=HYPERLINK("#Sheet2!R41C2","价格逻辑")')
+            sht1.write(31, 5, '=HYPERLINK("#Sheet2!R60C2","价格逻辑")')
+            sht1.write(39, 5, '=HYPERLINK("#Sheet2!R79C2","价格逻辑")')
+            sht1.write(47, 5, '=HYPERLINK("#Sheet2!R98C2","价格逻辑")')
+            sht1.write(55, 5, '=HYPERLINK("#Sheet2!R117C2","价格逻辑")')
+            sht1.write(63, 5, '=HYPERLINK("#Sheet2!R136C2","价格逻辑")')
+            sht1.write(71, 5, '=HYPERLINK("#Sheet2!R155C2","价格逻辑")')
+            sht1.write(79, 5, '=HYPERLINK("#Sheet2!R174C2","价格逻辑")')
+            sht1.write(87, 5, '=HYPERLINK("#Sheet2!R193C2","价格逻辑")')
+            sht1.write(95, 5, '=HYPERLINK("#Sheet2!R212C2","价格逻辑")')
+            sht1.write(103, 5, '=HYPERLINK("#Sheet2!R231C2","价格逻辑")')
+            sht1.write(111, 5, '=HYPERLINK("#Sheet2!R250C2","价格逻辑")')
+            sht1.write(119, 5, '=HYPERLINK("#Sheet2!R269C2","价格逻辑")')
+            sht1.write(127, 5, '=HYPERLINK("#Sheet2!R288C2","价格逻辑")')
+            sht1.write(135, 5, '=HYPERLINK("#Sheet2!R307C2","价格逻辑")')
+            sht1.write(143, 5, '=HYPERLINK("#Sheet2!R326C2","价格逻辑")')
+            sht1.write(151, 5, '=HYPERLINK("#Sheet2!R345C2","价格逻辑")')
+            sht1.write(159, 5, '=HYPERLINK("#Sheet2!R364C2","价格逻辑")')
+            sht1.write(167, 5, '=HYPERLINK("#Sheet2!R383C2","价格逻辑")')
+            sht1.write(175, 5, '=HYPERLINK("#Sheet2!R402C2","价格逻辑")')
+            sht1.write(183, 5, '=HYPERLINK("#Sheet2!R421C2","价格逻辑")')
+            sht1.write(191, 5, '=HYPERLINK("#Sheet2!R440C2","价格逻辑")')
+            sht1.write(199, 5, '=HYPERLINK("#Sheet2!R459C2","价格逻辑")')
+            sht1.write(207, 5, '=HYPERLINK("#Sheet2!R478C2","价格逻辑")')
+            sht1.write(215, 5, '=HYPERLINK("#Sheet2!R497C2","价格逻辑")')
+            sht1.write(223, 5, '=HYPERLINK("#Sheet2!R516C2","价格逻辑")')
+            sht1.write(231, 5, '=HYPERLINK("#Sheet2!R535C2","价格逻辑")')
+            sht1.write(239, 5, '=HYPERLINK("#Sheet2!R554C2","价格逻辑")')
+            sht1.write(247, 5, '=HYPERLINK("#Sheet2!R573C2","价格逻辑")')
+            sht1.write(255, 5, '=HYPERLINK("#Sheet2!R592C2","价格逻辑")')
+            sht1.write(263, 5, '=HYPERLINK("#Sheet2!R611C2","价格逻辑")')
+            sht1.write(271, 5, '=HYPERLINK("#Sheet2!R630C2","价格逻辑")')
+            sht1.write(279, 5, '=HYPERLINK("#Sheet2!R649C2","价格逻辑")')
+            sht1.write(287, 5, '=HYPERLINK("#Sheet2!R668C2","价格逻辑")')
+            sht1.write(295, 5, '=HYPERLINK("#Sheet2!R687C2","价格逻辑")')
+            sht1.write(303, 5, '=HYPERLINK("#Sheet2!R706C2","价格逻辑")')
+            sht1.write(311, 5, '=HYPERLINK("#Sheet2!R725C2","价格逻辑")')
+            sht1.write(319, 5, '=HYPERLINK("#Sheet2!R744C2","价格逻辑")')
+            sht1.write(327, 5, '=HYPERLINK("#Sheet2!R763C2","价格逻辑")')
+            sht1.write(335, 5, '=HYPERLINK("#Sheet2!R782C2","价格逻辑")')
+            sht1.write(343, 5, '=HYPERLINK("#Sheet2!R801C2","价格逻辑")')
+            sht1.write(351, 5, '=HYPERLINK("#Sheet2!R820C2","价格逻辑")')
+            sht1.write(359, 5, '=HYPERLINK("#Sheet2!R839C2","价格逻辑")')
+            sht1.write(367, 5, '=HYPERLINK("#Sheet2!R858C2","价格逻辑")')
+            sht1.write(375, 5, '=HYPERLINK("#Sheet2!R877C2","价格逻辑")')
+            sht1.write(383, 5, '=HYPERLINK("#Sheet2!R896C2","价格逻辑")')
+            sht1.write(391, 5, '=HYPERLINK("#Sheet2!R915C2","价格逻辑")')
+            sht1.write(399, 5, '=HYPERLINK("#Sheet2!R934C2","价格逻辑")')
+            sht1.write(407, 5, '=HYPERLINK("#Sheet2!R953C2","价格逻辑")')
+            sht1.write(415, 5, '=HYPERLINK("#Sheet2!R972C2","价格逻辑")')
+            sht1.write(423, 5, '=HYPERLINK("#Sheet2!R991C2","价格逻辑")')
+            sht1.write(431, 5, '=HYPERLINK("#Sheet2!R1010C2","价格逻辑")')
+            sht1.write(439, 5, '=HYPERLINK("#Sheet2!R1029C2","价格逻辑")')
+            sht1.write(447, 5, '=HYPERLINK("#Sheet2!R1048C2","价格逻辑")')
+            sht1.write(455, 5, '=HYPERLINK("#Sheet2!R1067C2","价格逻辑")')
+            sht1.write(463, 5, '=HYPERLINK("#Sheet2!R1086C2","价格逻辑")')
+            sht1.write(471, 5, '=HYPERLINK("#Sheet2!R1105C2","价格逻辑")')
+            sht1.write(479, 5, '=HYPERLINK("#Sheet2!R1124C2","价格逻辑")')
+            sht1.write(487, 5, '=HYPERLINK("#Sheet2!R1143C2","价格逻辑")')
+            sht1.write(495, 5, '=HYPERLINK("#Sheet2!R1162C2","价格逻辑")')
+            sht1.write(503, 5, '=HYPERLINK("#Sheet2!R1181C2","价格逻辑")')
+            sht1.write(511, 5, '=HYPERLINK("#Sheet2!R1200C2","价格逻辑")')
+            sht1.write(519, 5, '=HYPERLINK("#Sheet2!R1219C2","价格逻辑")')
+            sht1.write(527, 5, '=HYPERLINK("#Sheet2!R1238C2","价格逻辑")')
+            sht1.write(535, 5, '=HYPERLINK("#Sheet2!R1257C2","价格逻辑")')
+            sht1.write(543, 5, '=HYPERLINK("#Sheet2!R1276C2","价格逻辑")')
+            sht1.write(551, 5, '=HYPERLINK("#Sheet2!R1295C2","价格逻辑")')
+            sht1.write(559, 5, '=HYPERLINK("#Sheet2!R1314C2","价格逻辑")')
+            sht1.write(567, 5, '=HYPERLINK("#Sheet2!R1333C2","价格逻辑")')
+            sht1.write(575, 5, '=HYPERLINK("#Sheet2!R1352C2","价格逻辑")')
+            sht1.write(583, 5, '=HYPERLINK("#Sheet2!R1371C2","价格逻辑")')
+            sht1.write(591, 5, '=HYPERLINK("#Sheet2!R1390C2","价格逻辑")')
+            sht1.write(599, 5, '=HYPERLINK("#Sheet2!R1409C2","价格逻辑")')
+            sht1.write(607, 5, '=HYPERLINK("#Sheet2!R1428C2","价格逻辑")')
+            sht1.write(615, 5, '=HYPERLINK("#Sheet2!R1447C2","价格逻辑")')
+            sht1.write(623, 5, '=HYPERLINK("#Sheet2!R1466C2","价格逻辑")')
+            sht1.write(631, 5, '=HYPERLINK("#Sheet2!R1485C2","价格逻辑")')
+            sht1.write(639, 5, '=HYPERLINK("#Sheet2!R1504C2","价格逻辑")')
+            sht1.write(647, 5, '=HYPERLINK("#Sheet2!R1523C2","价格逻辑")')
+            sht1.write(655, 5, '=HYPERLINK("#Sheet2!R1542C2","价格逻辑")')
+            sht1.write(663, 5, '=HYPERLINK("#Sheet2!R1561C2","价格逻辑")')
+            sht1.write(671, 5, '=HYPERLINK("#Sheet2!R1580C2","价格逻辑")')
+            sht1.write(679, 5, '=HYPERLINK("#Sheet2!R1599C2","价格逻辑")')
+            sht1.write(687, 5, '=HYPERLINK("#Sheet2!R1618C2","价格逻辑")')
+            sht1.write(695, 5, '=HYPERLINK("#Sheet2!R1637C2","价格逻辑")')
+            sht1.write(703, 5, '=HYPERLINK("#Sheet2!R1656C2","价格逻辑")')
+            sht1.write(711, 5, '=HYPERLINK("#Sheet2!R1675C2","价格逻辑")')
+            sht1.write(719, 5, '=HYPERLINK("#Sheet2!R1694C2","价格逻辑")')
+            sht1.write(727, 5, '=HYPERLINK("#Sheet2!R1713C2","价格逻辑")')
+            sht1.write(735, 5, '=HYPERLINK("#Sheet2!R1732C2","价格逻辑")')
+            sht1.write(743, 5, '=HYPERLINK("#Sheet2!R1751C2","价格逻辑")')
+            sht1.write(751, 5, '=HYPERLINK("#Sheet2!R1770C2","价格逻辑")')
+            sht1.write(759, 5, '=HYPERLINK("#Sheet2!R1789C2","价格逻辑")')
+            sht1.write(767, 5, '=HYPERLINK("#Sheet2!R1808C2","价格逻辑")')
+            sht1.write(775, 5, '=HYPERLINK("#Sheet2!R1827C2","价格逻辑")')
+            sht1.write(783, 5, '=HYPERLINK("#Sheet2!R1846C2","价格逻辑")')
+            sht1.write(791, 5, '=HYPERLINK("#Sheet2!R1865C2","价格逻辑")')
+            sht1.write(799, 5, '=HYPERLINK("#Sheet2!R1884C2","价格逻辑")')
+            sht1.write(807, 5, '=HYPERLINK("#Sheet2!R1903C2","价格逻辑")')
+            # dict[PN] = [base_price,base_price_RFQ, price_RFQ, price_targe
+            AAA=dict_tans.get(aaa)
+            # print(AAA)
+            base_price_RFQ_xls=AAA[1]
+            base_price_RFQ_xls_act=round(base_price_RFQ_xls,2)
+            sht1.write(s, 3, supplier_code_RFQ, style5)
+            sht1.write(s,4, supplier_RFQ, style5)
+            sht1.write(z,1,'基础价格',style1)
+            sht1.write(z,3,'量产基础价格:',style1)
+            sht1.write(c,1,' ',style7)
+            sht1.write(c,2,' ', style7)
+            sht1.write(c,3,' ', style7)
+            sht1.write(c,4,' ', style7)
+            base_price_xls =AAA[0]
+            # # print(base_price_xls)
+            # # print(type(base_price_xls))
+            # base_price_act = base_price_xls.to_string()
+            # # print(base_price_act)
+            # base_price_act_list=base_price_act.split()
+            # # print(base_price_act_list)
+            # base_price_act_act=base_price_act_list[-1]
+            # print(base_price_act_act)
+            sht1.write(x,1,'运包费报价',style1)
+            all=AAA[2]
+            sht1.write(x,3,'运包费参考价',style1)
+            pn_name=AAA[4]
+            target=AAA[28]
+            sht1.write(s, 2, pn_name, style5)
+            sht1.write(x,4,target,style5)
+            sht1.write(v,1,'价格分析',style1)
+            sht1.write(b,1,'补充说明:',style1)
+            if base_price_xls != "无量产价格":
+                base_price_x = round(base_price_xls, 2)
+                if base_price_RFQ_xls_act <= base_price_x:
+                    sht1.write(z, 2, base_price_RFQ_xls_act, style5)
+                else:
+                    sht1.write(z, 2, base_price_RFQ_xls_act, style55)
+                if all <= target:
+                    sht1.write(x, 2, all, style5)
+                else:
+                    sht1.write(x, 2, all, style55)
+                if all <= target and base_price_RFQ_xls_act <= base_price_x:
+                    sht1.write(v, 2, '价格处于合理区间', style3)
+                else:
+                    sht1.write(v, 2, '价格需进一步解释', style4)
+                # print(type(base_price_act_act))
+                # sht1.write(z,4,base_price_act_float,style5)
+                sht1.write(z, 4, base_price_xls, style5)
+            else:
+                sht1.write(z,4,'无量产价格',style4)
+                sht1.write(v, 2, '价格需进一步解释', style4)
+                sht1.write(z, 2, base_price_RFQ_xls_act, style5)
+                if all <= target:
+                    sht1.write(x, 2, all, style5)
+                else:
+                    sht1.write(x, 2, all, style55)
+            J = J+1
+            n = n+8
+            s = s+8
+            z = z+8
+            x = x+8
+            c = c+8
+            v = v+8
+            b = b+8
+    while mm<= len(dict_tans):
+        for aaa in dict_tans.keys():
+            AAA = dict_tans.get(aaa)
+            sht2.set_row(nn, 30)
+            sht2.set_row(ss, 30)
+            sht2.set_row(zz, 30)
+            sht2.set_row(xx, 30)
+            sht2.set_row(cc, 10)
+            sht2.set_row(vv, 30)
+            sht2.set_row(bb, 30)
+            sht2.set_row(dd, 30)
+            sht2.set_row(ff, 30)
+            sht2.set_row(gg, 30)
+            sht2.set_row(hh, 30)
+            sht2.set_row(jj, 30)
+            sht2.set_row(kk, 30)
+            sht2.set_row(ll, 30)
+            sht2.set_row(qq, 30)
+            sht2.set_row(ww, 30)
+            sht2.set_row(ee, 30)
+            sht2.set_row(rr, 30)
+            sht2.set_row(tt, 10)
+            sht2.write(nn, 1, '零件号', style1)
+            sht2.write(nn, 2, '零件名称', style1)
+            sht2.write(nn, 3, '供应商代码', style1)
+            sht2.write(nn, 4, '供应商', style1)
+            # print(aaa)
+            sht2.write(ss, 1, aaa, style5)
+            # dict[PN] = [base_price,base_price_RFQ, price_RFQ, price_targe
+            # AAA = dict_tans.get(aaa)
+            # print(AAA)
+            base_price_RFQ_xls = AAA[1]
+            base_price_RFQ_xls_act = round(base_price_RFQ_xls, 2)
+            sht2.write(ss, 3, supplier_code_RFQ, style5)
+            sht2.write(ss, 4, supplier_RFQ, style5)
+            sht2.write(zz, 1, '基础价格', style1)
+            sht2.write(zz, 3, '量产基础价格:', style1)
+            sht2.write(cc, 1, ' ', style1)
+            sht2.write(cc, 2, ' ', style1)
+            sht2.write(cc, 3, ' ', style1)
+            sht2.write(cc, 4, ' ', style1)
+            base_price_xls = AAA[0]
+            # # print(base_price_xls)
+            # # print(type(base_price_xls))
+            # base_price_act = base_price_xls.to_string()
+            # # print(base_price_act)
+            # base_price_act_list = base_price_act.split()
+            # # print(base_price_act_list)
+            # base_price_act_act = base_price_act_list[-1]
+            # # print(base_price_act_act)
+            sht2.write(xx, 1, '运包费报价', style1)
+            all = AAA[2]
+            sht2.write(xx, 3, '运包费参考价', style1)
+            pn_name = AAA[4]
+            target = AAA[28]
+            sht2.write(ss, 2, pn_name, style5)
+            sht2.write(xx, 4, target, style5)
+            if base_price_xls != "无量产价格":
+                base_price_x = round(base_price_xls,2)
+                if base_price_RFQ_xls_act <= base_price_x:
+                    sht2.write(zz, 2, base_price_RFQ_xls_act, style5)
+                else:
+                    sht2.write(zz, 2, base_price_RFQ_xls_act, style55)
+                if all <= target:
+                    sht2.write(xx, 2, all, style5)
+                else:
+                    sht2.write(xx, 2, all, style55)
+                sht2.write(zz, 4, base_price_x, style5)
+            else:
+                sht2.write(zz, 4, '无量产价格', style4)
+                sht2.write(zz, 2, base_price_RFQ_xls_act, style5)
+                if all <= target:
+                    sht2.write(xx, 2, all, style5)
+                else:
+                    sht2.write(xx, 2, all, style55)
+            sht2.write(vv,1,"包装分析",style1)
+            pack_analy=AAA[12]
+            sht2.write(vv,2,pack_analy,style5)
+            sht2.write(vv,3,"MOQ",style1)
+            MOQ=AAA[3]
+            sht2.write(vv,4,MOQ,style5)
+            sht2.write(bb,1,"包装类型",style1)
+            pack_style=AAA[7]
+            sht2.write(bb,2,pack_style,style5)
+            sht2.write(bb,3,"MPQ",style1)
+            MPQ=AAA[5]
+            sht2.write(bb,4,MPQ,style5)
+            sht2.write(dd,1,"纸/木箱价格",style1)
+            pack_price=round(AAA[29],2)
+            sht2.write(dd,2,pack_price,style5)
+            sht2.write(dd,3,"托盘价格",style1)
+            tuo_price=AAA[15]
+            sht2.write(dd,4,tuo_price,style5)
+            sht2.write(ff,1,"包材价格",style1)
+            baocai_price=round(AAA[30],2)
+            sht2.write(ff,2,baocai_price,style5)
+            sht2.write(ff,3,"托盘实际装载数量",style1)
+            quantity_tuo=AAA[17]
+            sht2.write(ff,4,quantity_tuo,style5)
+            sht2.write(gg,1,"单箱实际装载数量",style1)
+            quantity_pack=AAA[16]
+            sht2.write(gg,2,quantity_pack,style5)
+            sht2.write(gg,3,"平均每件包装费用参考",style1)
+            eachone_price=round(AAA[26],2)
+            sht2.write(gg,4,eachone_price,style5)
+            sht2.write(hh,1,"运输分析",style1)
+            style_tranport=AAA[10]
+            sht2.write(hh,2,style_tranport,style5)
+            sht2.write(hh,3,"供应商单位DN零件数量：",style1)
+            DN_quantity_act = round(DN_quantity,2)
+            sht2.write(hh,4,DN_quantity_act,style5)
+            sht2.write(jj,1,"出发地：",style1)
+            departure=AAA[9]
+            sht2.write(jj,2,departure,style5)
+            sht2.write(jj,3,"仓库：",style1)
+            warehouse=AAA[11]
+            sht2.write(jj,4,warehouse,style5)
+            sht2.write(kk,1,"最小包装质量（含零件）：",style1)
+            nba=AAA[8]
+            sht2.write(kk,2,nba,style5)
+            sht2.write(kk,3,"最小包装体积重量：",style1)
+            nba_v=AAA[6]
+            sht2.write(kk,4,nba_v,style5)
+            sht2.write(ll,1,"整托质量：",style1)
+            weight_tuo=AAA[19]
+            sht2.write(ll,2,weight_tuo,style5)
+            sht2.write(ll,3,"整托体积重量：",style1)
+            weight_tuo_v=AAA[18]
+            sht2.write(ll,4,weight_tuo_v,style5)
+            sht2.write(qq,1,"首重：",style1)
+            shouzhong=AAA[20]
+            sht2.write(qq,2,shouzhong,style5)
+            sht2.write(qq,3,"续重：",style1)
+            xuzhong=AAA[21]
+            sht2.write(qq,4,xuzhong,style5)
+            sht2.write(ww,1,"签单回执费用：",style1)
+            qiandan=AAA[22]
+            sht2.write(ww,2,qiandan,style5)
+            sht2.write(ww,3,"超长超重附加费：",style1)
+            chaochangchaozhong=AAA[23]
+            sht2.write(ww,4,chaochangchaozhong,style5)
+            sht2.write(ee,1,"特殊入仓费用：",style1)
+            teshurucang=AAA[24]
+            sht2.write(ee,2,teshurucang,style5)
+            sht2.write(ee,3,"定时派送费用：",style1)
+            dingshipaisong=AAA[25]
+            sht2.write(ee,4,dingshipaisong,style5)
+            sht2.write(rr,1,"整托实际装载数量：",style1)
+            quantity_tuo_act=AAA[17]
+            sht2.write(rr,2,quantity_tuo_act,style5)
+            sht2.write(rr,3,"平均每件运输费用参考:",style1)
+            transport_price=round(AAA[27],2)
+            sht2.write(rr,4,transport_price,style5)
+            sht2.write(tt,1," ",style7)
+            sht2.write(tt, 2, " ", style7)
+            sht2.write(tt, 3, " ", style7)
+            sht2.write(tt, 4, " ", style7)
+            mm = mm+1
+            nn = nn+19
+            ss = ss+19
+            zz = zz+19
+            xx = xx+19
+            cc = cc+19
+            vv = vv+19
+            bb = bb+19
+            dd = dd+19
+            ff = ff+19
+            gg = gg+19
+            hh = hh+19
+            jj = jj+19
+            kk = kk+19
+            ll = ll+19
+            qq = qq+19
+            ww = ww+19
+            ee = ee+19
+            rr = rr+19
+            tt = tt+19
+    for row in range(b,809):
+        sht1.set_row(row,None,None, {'hidden': True})
+    workbook.close()
+    input("please input any key to exit!")
+except IndexError as e:
+    print(e)
+    input("please input any key to exit!")
+    # input("please input any key to exit!")
+    # 输出文件路径
+    # print(f"Output file created: {output_file_path}")
+# 后端代码函数，接收两个文件地址并计算后导出一个文件
