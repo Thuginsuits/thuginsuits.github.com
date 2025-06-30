@@ -1,0 +1,213 @@
+#导库
+import pandas as pd
+import xlsxwriter
+import openpyxl
+import datetime
+import os
+#读取备件合同表
+Spare_parts_path = input(r'请输入备件合同表路径：')
+all_Plants_statistics_path = r"\\S688f003\P_S_BC_Dept\P_S_BC\7_备件合同\500_AS PROC 备件采购\BuyerAndSales 打开这个\量产系统价格\all_Plants_statistics_v2.xlsx"
+# filename = os.path.basename(Spare_parts_path)
+Spare_parts_file = pd.read_excel(Spare_parts_path,sheet_name="Download & Upload",header=None)
+all_Plants_statistics_file = pd.read_excel(all_Plants_statistics_path, sheet_name="整理透视表")
+Spare_parts_file.iloc[:,24] = pd.to_numeric(Spare_parts_file.iloc[:, 24], errors='coerce')
+# Spare_parts_file.iloc[2,1] = pd.to_numeric(Spare_parts_file.iloc[2,1],errors='coerce')
+# print(Spare_parts_file.iloc[:,24])
+#创建字典
+dict_pn = {}
+dict_all = {}
+#读取备件合同表
+charge_Spare_parts_file = pd.isnull(Spare_parts_file)
+i= 22  #循环提取辅助数
+
+
+len_PN = Spare_parts_file.shape[0]  #给循环定最大值
+Contract_No = int(Spare_parts_file.iloc[2,1])
+# Contract_No = filename[:10]
+print(Contract_No)
+PN = Spare_parts_file.iloc[i, 8]
+Production_Location = int(Spare_parts_file.iloc[22,24])
+# print(Production_Location)
+# print(PN)
+while charge_Spare_parts_file.iloc[i, 8] == False:
+    Base_price = Spare_parts_file.iloc[i, 12]
+    Base_price_series = all_Plants_statistics_file.loc[(all_Plants_statistics_file['PN'] == PN) & \
+                                                       (all_Plants_statistics_file["Supplier number"] == Production_Location), 'Actual Base Price']
+    Mass_Production_Contract_Num = all_Plants_statistics_file.loc[(all_Plants_statistics_file['PN'] == PN) & \
+                                                       (all_Plants_statistics_file["Supplier number"] == Production_Location), 'Contract num']
+    if Base_price_series.empty == False:
+        Base_price_series_act = float(Base_price_series.iloc[0:1])
+    else:
+        Base_price_series_act = "未找到现有效量产价格"
+    Part_name = Spare_parts_file.iloc[i,2]
+    Price_from = Spare_parts_file.iloc[i, 17]
+    Price_to = Spare_parts_file.iloc[i, 18]
+    dict_pn[PN] = [Base_price]
+    dict_all.update(dict_pn)
+    dict_all[PN].append(Part_name)
+    dict_all[PN].append(Base_price_series_act)
+    dict_all[PN].append(Price_from)
+    dict_all[PN].append(Price_to)
+    dict_all[PN].append(Mass_Production_Contract_Num)
+    i = i + 1
+    if i < len_PN:
+        PN = Spare_parts_file.iloc[i, 8]
+    else:
+        break
+print(dict_all)
+#写入Excel
+save_file = input("请输入要保存到地址：")
+url = save_file + str(datetime.date.today()) + '-' + "Base price assistant.xlsx"  # 桌面路径与文件名相加
+workbook = xlsxwriter.Workbook(url, {'nan_inf_to_errors': True})  # 新建excel表,可写不使用以上函数自己写入要保存的路径
+sht1 = workbook.add_worksheet(name='Base price Assistant')
+#     sht1 = workbook.add_worksheet(name=aaa)
+style1 = workbook.add_format({
+    'align': 'centre',  # 水平居中
+    'valign': 'vcentre',  # 垂直居中
+    'bold': True,  # 加粗（默认False）
+    'font_name': '汉仪中宋简',
+    'font_size': 12,
+    'bold': True,
+    'border': 2,
+    'bg_color': '#8896BE'
+})
+style2 = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中
+    'font_name': 'CorpoS',
+    'font_size': 11,
+    'border': 1
+})
+date_format = workbook.add_format({
+    'num_format': 'yyyy/mmmm/d',
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中
+    'font_name': 'CorpoS',
+    'font_size': 11,
+    'border': 1
+})
+style3 = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中
+    'font_name': '汉仪中宋简',
+    'font_size': 14,
+    'border': 1
+})
+style4 = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中
+    'font_name': 'CorpoS',
+    'font_size': 11,
+    'fg_color': '#F4D088',
+    'border': 1
+})
+style4_V2 = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中
+    'font_name': '汉仪中宋简',
+    'fg_color': '#F4D088',
+    'font_size': 14
+})
+style5 = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中
+    'font_name': '汉仪中宋简',
+    'font_size': 12,
+    'text_wrap': True
+})
+style55 = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中
+    'font_name': '汉仪中宋简',
+    'font_size': 12,
+    'fg_color': '#F4D088',
+    'text_wrap': True
+})
+style6 = workbook.add_format({
+    'align': 'centre',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中
+    'font_name': '汉仪中宋简',
+    'font_size': 18,
+    'bold': True,
+    'border': 2,
+    'bg_color': '#8896BE'
+})
+style7 = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中
+    'bg_color': '#8896BE'
+})
+style8 = workbook.add_format({
+    'align': 'left',  # 水平靠左
+    'valign': 'vcentre',  # 垂直居中
+    'font_name': '汉仪中宋简',
+    'font_size': 12,
+    'text_wrap': True,
+    'bg_color': '#808080'
+})
+J = 1
+m = 2
+sht1.set_column('A:A', 1)
+sht1.set_column('B:B', 18)
+sht1.set_column('C:E', 20)
+sht1.set_column('F:F', 40)
+sht1.set_column('G:H', 18)
+sht1.set_column('I:I', 28)
+sht1.set_column('J:J', 38)
+while J <= len(dict_all):
+    for aaa in dict_all.keys():
+        sht1.set_row(1, 30)
+        sht1.write(1, 1, '售后备件合同号', style1)
+        sht1.write(1, 2, 'Part NO.', style1)
+        sht1.write(1, 3, 'Price From', style1)
+        sht1.write(1, 4, 'Price To', style1)
+        sht1.write(1, 5, '零件名称', style1)
+        sht1.write(1, 6, '备件基础价格', style1)
+        sht1.write(1, 7, '最新量产基础价格', style1)
+        sht1.write(1, 8, '参考量产协议号', style1)
+        sht1.write(1, 9, '价格说明', style1)
+        AAA = dict_all.get(aaa)
+        Base_price_xls = float(AAA[0])
+        Part_name_XLS = AAA[1]
+        Base_price_series_act_xls = (AAA[2])
+        if Base_price_series_act_xls != "未找到现有效量产价格":
+            Base_price_series_act_xls = float((AAA[2]))
+            Price_from_xls = AAA[3]
+            Price_to_xls = AAA[4]
+            Contract_No_xls = AAA[5][0:1]
+            print(Contract_No_xls)
+            sht1.write(m, 1, Contract_No, style2)
+            sht1.write(m, 2, aaa, style2)
+            # worksheet.write_datetime('A1', date_time, date_format)
+            sht1.write_datetime(m, 3, Price_from_xls,date_format)
+            sht1.write_datetime(m, 4, Price_to_xls,date_format)
+            sht1.write(m, 5, Part_name_XLS, style2)
+            if Base_price_series_act_xls >= Base_price_xls:
+                sht1.write(m, 6, Base_price_xls, style2)
+                sht1.write(m, 7, Base_price_series_act_xls, style2)
+                sht1.write(m,8,Contract_No_xls,style2)
+                sht1.write(m,9,'',style3)
+            else:
+                sht1.write(m, 6, Base_price_xls, style4)
+                sht1.write(m, 7, Base_price_series_act_xls, style4)
+                sht1.write(m,8,Contract_No_xls,style2)
+                sht1.write(m,9,'',style3)
+        else:
+            Base_price_series_act_xls = (AAA[2])
+            Price_from_xls = AAA[3]
+            Price_to_xls = AAA[4]
+            Contract_No_xls = AAA[5]
+            sht1.write(m, 1, Contract_No, style2)
+            sht1.write(m, 2, aaa, style2)
+            # worksheet.write_datetime('A1', date_time, date_format)
+            sht1.write_datetime(m, 3, Price_from_xls, date_format)
+            sht1.write_datetime(m, 4, Price_to_xls, date_format)
+            sht1.write(m, 5, Part_name_XLS, style2)
+            sht1.write(m, 6, Base_price_xls, style2)
+            sht1.write(m, 7, Base_price_series_act_xls, style2)
+            sht1.write(m, 8, '', style2)
+            sht1.write(m, 9, '', style3)
+        J = J+1
+        m = m+1
+    workbook.close()
+input("Print any key to exit")
